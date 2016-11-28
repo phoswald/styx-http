@@ -16,6 +16,7 @@
 package phoswald.netty.client;
 
 import java.net.URI;
+import java.util.concurrent.TimeUnit;
 
 import io.netty.bootstrap.Bootstrap;
 import io.netty.channel.Channel;
@@ -102,7 +103,7 @@ public final class HttpSnoopClient {
             ch.closeFuture().sync();
         } finally {
             // Shut down executor threads to exit.
-            group.shutdownGracefully();
+            group.shutdownGracefully(0, 0, TimeUnit.MILLISECONDS);
         }
     }
 }
