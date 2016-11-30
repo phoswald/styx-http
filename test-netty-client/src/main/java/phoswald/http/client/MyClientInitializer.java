@@ -13,7 +13,7 @@
  * License for the specific language governing permissions and limitations
  * under the License.
  */
-package phoswald.netty.client;
+package phoswald.http.client;
 
 import io.netty.channel.ChannelInitializer;
 import io.netty.channel.ChannelPipeline;
@@ -22,11 +22,13 @@ import io.netty.handler.codec.http.HttpClientCodec;
 import io.netty.handler.codec.http.HttpContentDecompressor;
 import io.netty.handler.ssl.SslContext;
 
-public class HttpSnoopClientInitializer extends ChannelInitializer<SocketChannel> {
+class MyClientInitializer extends ChannelInitializer<SocketChannel> {
 
+    private final MyResponseHandler handler;
     private final SslContext sslCtx;
 
-    public HttpSnoopClientInitializer(SslContext sslCtx) {
+    MyClientInitializer(MyResponseHandler handler, SslContext sslCtx) {
+        this.handler = handler;
         this.sslCtx = sslCtx;
     }
 
@@ -47,6 +49,6 @@ public class HttpSnoopClientInitializer extends ChannelInitializer<SocketChannel
         // Uncomment the following line if you don't want to handle HttpContents.
         //p.addLast(new HttpObjectAggregator(1048576));
 
-        p.addLast(new HttpSnoopClientHandler());
+        p.addLast(handler);
     }
 }

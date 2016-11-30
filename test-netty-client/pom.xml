@@ -12,9 +12,9 @@
   <version>0.0.1-SNAPSHOT</version>
   <packaging>jar</packaging>
 
-  <name>${artifactId}</name>
-  <description>${artifactId}</description>
-  <url>https://github.com/phoswald/${artifactId}</url>
+  <name>${project.artifactId}</name>
+  <description>${project.artifactId}</description>
+  <url>https://github.com/phoswald/${project.artifactId}</url>
 
   <properties>
     <project.build.sourceEncoding>UTF-8</project.build.sourceEncoding>
@@ -77,7 +77,7 @@
             <manifest>
               <addClasspath>true</addClasspath>
               <classpathPrefix>lib/</classpathPrefix>
-              <mainClass>phoswald.netty.client.HttpSnoopClient</mainClass>
+              <mainClass>phoswald.sample.client.SampleClient</mainClass>
             </manifest>
           </archive>
         </configuration>

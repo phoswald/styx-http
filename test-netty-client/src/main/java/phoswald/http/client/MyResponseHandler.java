@@ -13,7 +13,9 @@
  * License for the specific language governing permissions and limitations
  * under the License.
  */
-package phoswald.netty.client;
+package phoswald.http.client;
+
+import java.util.concurrent.CompletableFuture;
 
 import io.netty.channel.ChannelHandlerContext;
 import io.netty.channel.SimpleChannelInboundHandler;
@@ -24,40 +26,43 @@ import io.netty.handler.codec.http.HttpUtil;
 import io.netty.handler.codec.http.LastHttpContent;
 import io.netty.util.CharsetUtil;
 
-public class HttpSnoopClientHandler extends SimpleChannelInboundHandler<HttpObject> {
+class MyResponseHandler extends SimpleChannelInboundHandler<HttpObject> {
+
+    private final StringBuilder text = new StringBuilder();
+    private final CompletableFuture<MyResponse> future = new CompletableFuture<>();
 
     @Override
     public void channelRead0(ChannelHandlerContext ctx, HttpObject msg) {
         if (msg instanceof HttpResponse) {
             HttpResponse response = (HttpResponse) msg;
 
-            System.err.println("STATUS: " + response.status());
-            System.err.println("VERSION: " + response.protocolVersion());
-            System.err.println();
+            text.append("STATUS: " + response.status() + "\n");
+            text.append("VERSION: " + response.protocolVersion() + "\n");
+            text.append("\n");
 
             if (!response.headers().isEmpty()) {
                 for (CharSequence name: response.headers().names()) {
                     for (CharSequence value: response.headers().getAll(name)) {
-                        System.err.println("HEADER: " + name + " = " + value);
+                        text.append("HEADER: " + name + " = " + value + "\n");
                     }
                 }
-                System.err.println();
+                text.append("\n");
             }
 
             if (HttpUtil.isTransferEncodingChunked(response)) {
-                System.err.println("CHUNKED CONTENT {");
+                text.append("CHUNKED CONTENT {\n");
             } else {
-                System.err.println("CONTENT {");
+                text.append("CONTENT {\n");
             }
         }
         if (msg instanceof HttpContent) {
             HttpContent content = (HttpContent) msg;
 
-            System.err.print(content.content().toString(CharsetUtil.UTF_8));
-            System.err.flush();
+            text.append(content.content().toString(CharsetUtil.UTF_8));
 
             if (content instanceof LastHttpContent) {
-                System.err.println("} END OF CONTENT");
+                text.append("} END OF CONTENT\n");
+                future.complete(new MyResponse(text.toString()));
                 ctx.close();
             }
         }
@@ -65,7 +70,11 @@ public class HttpSnoopClientHandler extends SimpleChannelInboundHandler<HttpObje
 
     @Override
     public void exceptionCaught(ChannelHandlerContext ctx, Throwable cause) {
-        cause.printStackTrace();
+        future.completeExceptionally(cause);
         ctx.close();
+    }
+
+    CompletableFuture<MyResponse> future() {
+        return future;
     }
 }
