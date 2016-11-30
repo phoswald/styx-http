@@ -1,11 +1,13 @@
 package phoswald.http.client;
 
+import java.util.Optional;
 import java.util.concurrent.CompletableFuture;
 
 import javax.net.ssl.SSLException;
 
 import io.netty.bootstrap.Bootstrap;
 import io.netty.channel.Channel;
+import io.netty.channel.EventLoopGroup;
 import io.netty.channel.socket.nio.NioSocketChannel;
 import io.netty.handler.codec.http.DefaultFullHttpRequest;
 import io.netty.handler.codec.http.HttpHeaderNames;
@@ -21,17 +23,19 @@ import io.netty.handler.ssl.util.InsecureTrustManagerFactory;
 
 public class MyRequest {
 
-    private final MyClient client;
+    private final EventLoopGroup group;
+    private boolean secure = false;
     private String host = "localhost";
     private int port = 80;
     private String path = "/";
 
-    private MyRequest(MyClient client) {
-        this.client = client;
+    MyRequest(EventLoopGroup group) {
+        this.group = group;
     }
 
-    public static MyRequest build(MyClient client /* TODO remove this argument */) {
-        return new MyRequest(client);
+    public MyRequest secure(boolean secure) {
+        this.secure = secure;
+        return this;
     }
 
     public MyRequest host(String host) {
@@ -49,16 +53,7 @@ public class MyRequest {
         return this;
     }
 
-    public CompletableFuture<MyResponse> get(boolean useSsl) throws InterruptedException, SSLException {
-        MyResponseHandler handler = new MyResponseHandler();
-        Bootstrap bootstrap = new Bootstrap().
-            group(client.getGroup()).
-            channel(NioSocketChannel.class).
-            handler(new MyClientInitializer(handler, createSslContext(useSsl)));
-
-        // Make the connection attempt.
-        Channel ch = bootstrap.connect(host, port).sync().channel();
-
+    public CompletableFuture<MyResponse> get() throws InterruptedException, SSLException {
         // Prepare the HTTP request.
         HttpRequest request = new DefaultFullHttpRequest(HttpVersion.HTTP_1_1, HttpMethod.GET, path);
         request.headers().set(HttpHeaderNames.HOST, host);
@@ -72,20 +67,27 @@ public class MyRequest {
                         new DefaultCookie("my-cookie", "foo"),
                         new DefaultCookie("another-cookie", "bar")));
 
-        ch.writeAndFlush(request);
+        MyResponseHandler handler = new MyResponseHandler();
+        Bootstrap bootstrap = new Bootstrap().
+            group(group).
+            channel(NioSocketChannel.class).
+            handler(new MyClientInitializer(handler, createSslContext()));
 
+        // Make the connection attempt.
+        Channel channel = bootstrap.connect(host, port).sync().channel();
+        channel.writeAndFlush(request);
         //ch.closeFuture().sync();
 
         return handler.future();
     }
 
-    private static SslContext createSslContext(boolean useSsl) throws SSLException {
-        if(useSsl) {
-            return SslContextBuilder.forClient().
+    private Optional<SslContext> createSslContext() throws SSLException {
+        if(secure) {
+            return Optional.of(SslContextBuilder.forClient().
                     trustManager(InsecureTrustManagerFactory.INSTANCE).
-                    build();
+                    build());
         } else {
-            return null;
+            return Optional.empty();
         }
     }
 }

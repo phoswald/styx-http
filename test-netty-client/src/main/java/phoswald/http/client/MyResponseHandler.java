@@ -1,20 +1,8 @@
-/*
- * Copyright 2012 The Netty Project
- *
- * The Netty Project licenses this file to you under the Apache License,
- * version 2.0 (the "License"); you may not use this file except in compliance
- * with the License. You may obtain a copy of the License at:
- *
- *   http://www.apache.org/licenses/LICENSE-2.0
- *
- * Unless required by applicable law or agreed to in writing, software
- * distributed under the License is distributed on an "AS IS" BASIS, WITHOUT
- * WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied. See the
- * License for the specific language governing permissions and limitations
- * under the License.
- */
 package phoswald.http.client;
 
+import java.io.ByteArrayOutputStream;
+import java.util.ArrayList;
+import java.util.List;
 import java.util.concurrent.CompletableFuture;
 
 import io.netty.channel.ChannelHandlerContext;
@@ -24,46 +12,44 @@ import io.netty.handler.codec.http.HttpObject;
 import io.netty.handler.codec.http.HttpResponse;
 import io.netty.handler.codec.http.HttpUtil;
 import io.netty.handler.codec.http.LastHttpContent;
-import io.netty.util.CharsetUtil;
 
 class MyResponseHandler extends SimpleChannelInboundHandler<HttpObject> {
 
-    private final StringBuilder text = new StringBuilder();
     private final CompletableFuture<MyResponse> future = new CompletableFuture<>();
 
+    private String status;
+    private String version;
+    private boolean chunked;
+    private final List<MyResponse.Header> headers = new ArrayList<>();
+    private final ByteArrayOutputStream content = new ByteArrayOutputStream();
+
     @Override
-    public void channelRead0(ChannelHandlerContext ctx, HttpObject msg) {
-        if (msg instanceof HttpResponse) {
-            HttpResponse response = (HttpResponse) msg;
+    public void channelRead0(ChannelHandlerContext context, HttpObject message) {
+        if (message instanceof HttpResponse) {
+            HttpResponse message2 = (HttpResponse) message;
 
-            text.append("STATUS: " + response.status() + "\n");
-            text.append("VERSION: " + response.protocolVersion() + "\n");
-            text.append("\n");
+            status = message2.status().toString();
+            version = message2.protocolVersion().toString();
+            chunked = HttpUtil.isTransferEncodingChunked(message2);
 
-            if (!response.headers().isEmpty()) {
-                for (CharSequence name: response.headers().names()) {
-                    for (CharSequence value: response.headers().getAll(name)) {
-                        text.append("HEADER: " + name + " = " + value + "\n");
+            if (!message2.headers().isEmpty()) {
+                for (CharSequence name: message2.headers().names()) {
+                    for (CharSequence value: message2.headers().getAll(name)) {
+                        headers.add(new MyResponse.Header(name.toString(), value.toString()));
                     }
                 }
-                text.append("\n");
-            }
-
-            if (HttpUtil.isTransferEncodingChunked(response)) {
-                text.append("CHUNKED CONTENT {\n");
-            } else {
-                text.append("CONTENT {\n");
             }
         }
-        if (msg instanceof HttpContent) {
-            HttpContent content = (HttpContent) msg;
+        if (message instanceof HttpContent) {
+            HttpContent message2 = (HttpContent) message;
 
-            text.append(content.content().toString(CharsetUtil.UTF_8));
+            byte[] data = new byte[message2.content().readableBytes()];
+            message2.content().readBytes(data);
+            content.write(data, 0, data.length);
 
-            if (content instanceof LastHttpContent) {
-                text.append("} END OF CONTENT\n");
-                future.complete(new MyResponse(text.toString()));
-                ctx.close();
+            if (message2 instanceof LastHttpContent) {
+                future.complete(new MyResponse(status, version, chunked, headers, content));
+                context.close();
             }
         }
     }

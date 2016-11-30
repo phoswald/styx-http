@@ -11,17 +11,17 @@ public class MyClient implements AutoCloseable {
 
     public MyClient() {
         group = new NioEventLoopGroup();
-        System.out.println("NIO GROUP: START");
+        System.out.println("[CLIENT NIO GROUP: START]");
     }
 
     @Override
     public void close() {
         group.shutdownGracefully(0, 0, TimeUnit.MILLISECONDS).
                 syncUninterruptibly();
-        System.out.println("NIO GROUP: STOP");
+        System.out.println("[CLIENT NIO GROUP: STOP]");
     }
 
-    EventLoopGroup getGroup() {
-        return group;
+    public MyRequest request() {
+        return new MyRequest(group);
     }
 }
