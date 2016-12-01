@@ -15,13 +15,16 @@ import io.netty.handler.codec.http.LastHttpContent;
 
 class MyResponseHandler extends SimpleChannelInboundHandler<HttpObject> {
 
-    private final CompletableFuture<MyResponse> future = new CompletableFuture<>();
-
     private String status;
     private String version;
     private boolean chunked;
     private final List<MyResponse.Header> headers = new ArrayList<>();
     private final ByteArrayOutputStream content = new ByteArrayOutputStream();
+    private final CompletableFuture<MyResponse> future;
+
+    MyResponseHandler(CompletableFuture<MyResponse> future) {
+        this.future = future;
+    }
 
     @Override
     public void channelRead0(ChannelHandlerContext context, HttpObject message) {
@@ -58,9 +61,5 @@ class MyResponseHandler extends SimpleChannelInboundHandler<HttpObject> {
     public void exceptionCaught(ChannelHandlerContext ctx, Throwable cause) {
         future.completeExceptionally(cause);
         ctx.close();
-    }
-
-    CompletableFuture<MyResponse> future() {
-        return future;
     }
 }

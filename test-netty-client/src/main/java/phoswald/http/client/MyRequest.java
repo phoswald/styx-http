@@ -6,7 +6,7 @@ import java.util.concurrent.CompletableFuture;
 import javax.net.ssl.SSLException;
 
 import io.netty.bootstrap.Bootstrap;
-import io.netty.channel.Channel;
+import io.netty.channel.ChannelFuture;
 import io.netty.channel.EventLoopGroup;
 import io.netty.channel.socket.nio.NioSocketChannel;
 import io.netty.handler.codec.http.DefaultFullHttpRequest;
@@ -67,18 +67,24 @@ public class MyRequest {
                         new DefaultCookie("my-cookie", "foo"),
                         new DefaultCookie("another-cookie", "bar")));
 
-        MyResponseHandler handler = new MyResponseHandler();
+        CompletableFuture<MyResponse> responseFuture = new CompletableFuture<MyResponse>();
         Bootstrap bootstrap = new Bootstrap().
             group(group).
             channel(NioSocketChannel.class).
-            handler(new MyClientInitializer(handler, createSslContext()));
+            handler(new MyClientInitializer(createSslContext(), new MyResponseHandler(responseFuture)));
 
         // Make the connection attempt.
-        Channel channel = bootstrap.connect(host, port).sync().channel();
-        channel.writeAndFlush(request);
+        // Channel channel = bootstrap.connect(host, port).sync().channel();
+        bootstrap.connect(host, port).addListener((ChannelFuture channelFuture) -> {
+            if(channelFuture.isSuccess()) {
+                channelFuture.channel().writeAndFlush(request);
+            } else {
+                responseFuture.completeExceptionally(channelFuture.cause());
+            }
+        });
         //ch.closeFuture().sync();
 
-        return handler.future();
+        return responseFuture;
     }
 
     private Optional<SslContext> createSslContext() throws SSLException {
