@@ -3,8 +3,6 @@ package phoswald.http.client;
 import java.util.Optional;
 import java.util.concurrent.CompletableFuture;
 
-import javax.net.ssl.SSLException;
-
 import io.netty.bootstrap.Bootstrap;
 import io.netty.channel.ChannelFuture;
 import io.netty.channel.EventLoopGroup;
@@ -18,19 +16,19 @@ import io.netty.handler.codec.http.HttpVersion;
 import io.netty.handler.codec.http.cookie.ClientCookieEncoder;
 import io.netty.handler.codec.http.cookie.DefaultCookie;
 import io.netty.handler.ssl.SslContext;
-import io.netty.handler.ssl.SslContextBuilder;
-import io.netty.handler.ssl.util.InsecureTrustManagerFactory;
 
 public class MyRequest {
 
-    private final EventLoopGroup group;
+    private final EventLoopGroup eventLoopGroup;
+    private final SslContext sslContext;
     private boolean secure = false;
     private String host = "localhost";
     private int port = 80;
     private String path = "/";
 
-    MyRequest(EventLoopGroup group) {
-        this.group = group;
+    MyRequest(EventLoopGroup group, SslContext sslContext) {
+        this.sslContext = sslContext;
+        this.eventLoopGroup = group;
     }
 
     public MyRequest secure(boolean secure) {
@@ -53,7 +51,7 @@ public class MyRequest {
         return this;
     }
 
-    public CompletableFuture<MyResponse> get() throws InterruptedException, SSLException {
+    public CompletableFuture<MyResponse> get() {
         // Prepare the HTTP request.
         HttpRequest request = new DefaultFullHttpRequest(HttpVersion.HTTP_1_1, HttpMethod.GET, path);
         request.headers().set(HttpHeaderNames.HOST, host);
@@ -68,10 +66,13 @@ public class MyRequest {
                         new DefaultCookie("another-cookie", "bar")));
 
         CompletableFuture<MyResponse> responseFuture = new CompletableFuture<MyResponse>();
+
         Bootstrap bootstrap = new Bootstrap().
-            group(group).
+            group(eventLoopGroup).
             channel(NioSocketChannel.class).
-            handler(new MyClientInitializer(createSslContext(), new MyResponseHandler(responseFuture)));
+            handler(new MyChannelInitializer(
+                    secure ? Optional.of(sslContext) : Optional.empty(),
+                    new MyResponseHandler(responseFuture)));
 
         // Make the connection attempt.
         // Channel channel = bootstrap.connect(host, port).sync().channel();
@@ -85,15 +86,5 @@ public class MyRequest {
         //ch.closeFuture().sync();
 
         return responseFuture;
-    }
-
-    private Optional<SslContext> createSslContext() throws SSLException {
-        if(secure) {
-            return Optional.of(SslContextBuilder.forClient().
-                    trustManager(InsecureTrustManagerFactory.INSTANCE).
-                    build());
-        } else {
-            return Optional.empty();
-        }
     }
 }

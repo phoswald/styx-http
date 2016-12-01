@@ -6,17 +6,19 @@ import java.nio.charset.Charset;
 import java.util.Optional;
 import java.util.concurrent.CompletableFuture;
 
-import javax.net.ssl.SSLException;
-
 import phoswald.http.client.MyClient;
+import phoswald.http.client.MyException;
 import phoswald.http.client.MyResponse;
 
 public final class SampleClient {
 
     private static final String URL = System.getProperty("url", "http://127.0.0.1:8080/");
 
-    public static void main(String[] args) throws URISyntaxException, SSLException, InterruptedException {
-        URI uri = new URI(URL);
+    public static void main(String[] args) throws URISyntaxException {
+        new SampleClient().run(new URI(URL));
+    }
+
+    private void run(URI uri) {
         String scheme = Optional.ofNullable(uri.getScheme()).orElse("http");
         String host = Optional.ofNullable(uri.getHost()).orElse("127.0.0.1");
         int port = uri.getPort();
@@ -32,27 +34,27 @@ public final class SampleClient {
             }
             ssl = true;
         } else {
-            throw new IllegalArgumentException("Only http and https is supported");
+            throw new MyException("Only http and https is supported");
         }
 
         try(MyClient client = new MyClient()) {
 
             CompletableFuture<?> f1 = client.request().
                     secure(ssl).host(host).port(port).path(uri.getRawPath()).get().
-                    thenAccept(SampleClient::dumpResponse).
-                    exceptionally(SampleClient::dumpException);
+                    thenAccept(this::dumpResponse).
+                    exceptionally(this::dumpException);
 
             CompletableFuture<?> f2 = client.request().
                     secure(ssl).host(host).port(port).path(uri.getRawPath()).get().
-                    thenAccept(SampleClient::dumpResponse).
-                    exceptionally(SampleClient::dumpException);
+                    thenAccept(this::dumpResponse).
+                    exceptionally(this::dumpException);
 
             f1.join();
             f2.join();
         }
     }
 
-    private static synchronized void dumpResponse(MyResponse response) {
+    private synchronized void dumpResponse(MyResponse response) {
         System.out.println("> " + response.status() + " " + response.version() + " (chunked=" + response.chunked() + ")");
         for(MyResponse.Header header : response.headers()) {
             System.out.println("> " + header.name() + ": " + header.value());
@@ -60,7 +62,7 @@ public final class SampleClient {
         System.out.println("| " + response.content(Charset.forName("UTF-8")).replace("\n", "\n| "));
     }
 
-    private static synchronized Void dumpException(Throwable exception) {
+    private synchronized Void dumpException(Throwable exception) {
         exception.printStackTrace();
         return null;
     }
