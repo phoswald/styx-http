@@ -8,13 +8,13 @@
     <relativePath />
   </parent>
 
-  <artifactId>test-netty-server</artifactId>
+  <artifactId>http-client</artifactId>
   <version>0.0.1-SNAPSHOT</version>
   <packaging>jar</packaging>
 
-  <name>${artifactId}</name>
-  <description>${artifactId}</description>
-  <url>https://github.com/phoswald/${artifactId}</url>
+  <name>${project.artifactId}</name>
+  <description>${project.artifactId}</description>
+  <url>https://github.com/phoswald/${project.artifactId}</url>
 
   <properties>
     <project.build.sourceEncoding>UTF-8</project.build.sourceEncoding>
@@ -49,37 +49,6 @@
         <configuration>
           <source>1.8</source>
           <target>1.8</target>
-        </configuration>
-      </plugin>
-      <plugin>
-        <groupId>org.apache.maven.plugins</groupId>
-        <artifactId>maven-dependency-plugin</artifactId>
-        <version>2.10</version>
-        <executions>
-          <execution>
-            <phase>prepare-package</phase>
-            <goals>
-              <goal>copy-dependencies</goal>
-            </goals>
-            <configuration>
-              <outputDirectory>${project.build.directory}/lib</outputDirectory>
-              <includeScope>compile</includeScope>
-            </configuration>
-          </execution>
-        </executions>
-      </plugin>
-      <plugin>
-        <groupId>org.apache.maven.plugins</groupId>
-        <artifactId>maven-jar-plugin</artifactId>
-        <version>3.0.2</version>
-        <configuration>
-          <archive>
-            <manifest>
-              <addClasspath>true</addClasspath>
-              <classpathPrefix>lib/</classpathPrefix>
-              <mainClass>phoswald.netty.server.HttpSnoopServer</mainClass>
-            </manifest>
-          </archive>
         </configuration>
       </plugin>
     </plugins>
