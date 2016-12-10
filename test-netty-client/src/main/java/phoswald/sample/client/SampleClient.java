@@ -3,16 +3,22 @@ package phoswald.sample.client;
 import java.net.URI;
 import java.net.URISyntaxException;
 import java.nio.charset.Charset;
+import java.util.ArrayList;
+import java.util.List;
 import java.util.Optional;
 import java.util.concurrent.CompletableFuture;
 
 import phoswald.http.client.MyClient;
+import phoswald.http.client.MyCookie;
 import phoswald.http.client.MyException;
+import phoswald.http.client.MyHeader;
 import phoswald.http.client.MyResponse;
 
 public final class SampleClient {
 
     private static final String URL = System.getProperty("url", "http://127.0.0.1:8080/");
+
+    private final List<MyCookie> cookies = new ArrayList<>();
 
     public static void main(String[] args) throws URISyntaxException {
         new SampleClient().run(new URI(URL));
@@ -37,15 +43,22 @@ public final class SampleClient {
             throw new MyException("Only http and https is supported");
         }
 
+        cookies.add(new MyCookie("my-client-stuff", "12345676789"));
+
         try(MyClient client = new MyClient()) {
 
             CompletableFuture<?> f1 = client.request().
-                    secure(ssl).host(host).port(port).path(uri.getRawPath()).get().
+                    secure(ssl).host(host).port(port).path(uri.getRawPath()).param("cnt", "1").
+                    header("user-agent", "sampleclient/1.0.0").
+                    cookie(cookies).
+                    get().
                     thenAccept(this::dumpResponse).
                     exceptionally(this::dumpException);
 
             CompletableFuture<?> f2 = client.request().
-                    secure(ssl).host(host).port(port).path(uri.getRawPath()).get().
+                    secure(ssl).host(host).port(port).path(uri.getRawPath()).param("cnt", "2").
+                    header("x-blubber", "something").
+                    get().
                     thenAccept(this::dumpResponse).
                     exceptionally(this::dumpException);
 
@@ -56,10 +69,17 @@ public final class SampleClient {
 
     private synchronized void dumpResponse(MyResponse response) {
         System.out.println("> " + response.status() + " " + response.version() + " (chunked=" + response.chunked() + ")");
-        for(MyResponse.Header header : response.headers()) {
-            System.out.println("> " + header.name() + ": " + header.value());
+        for(MyHeader header : response.headers()) {
+            System.out.println("> HEADER " + header.name() + ": " + header.value());
         }
-        System.out.println("| " + response.content(Charset.forName("UTF-8")).replace("\n", "\n| "));
+        for(MyCookie cookie : response.cookies()) {
+            System.out.println("> COOKIE " + cookie.name() + "=" + cookie.value());
+        }
+        if(response.contentLength() > 0) {
+            Charset charset = response.charset().orElseThrow(IllegalArgumentException::new);
+            String content = response.content(charset);
+            System.out.println("| " + content.replace("\n", "\n| "));
+        }
     }
 
     private synchronized Void dumpException(Throwable exception) {

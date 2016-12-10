@@ -1,7 +1,7 @@
 package phoswald.http.server;
 
 import java.util.Optional;
-import java.util.function.Function;
+import java.util.function.BiConsumer;
 
 import io.netty.channel.ChannelInitializer;
 import io.netty.channel.ChannelPipeline;
@@ -13,9 +13,9 @@ import io.netty.handler.ssl.SslContext;
 public class MyChannelInitializer extends ChannelInitializer<SocketChannel> {
 
     private final Optional<SslContext> sslContext;
-    private final Function<MyRequest, MyResponse> handler;
+    private final BiConsumer<MyRequest, MyResponse> handler;
 
-    public MyChannelInitializer(Optional<SslContext> sslContext, Function<MyRequest, MyResponse> handler) {
+    public MyChannelInitializer(Optional<SslContext> sslContext, BiConsumer<MyRequest, MyResponse> handler) {
         this.sslContext = sslContext;
         this.handler = handler;
     }

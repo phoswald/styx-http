@@ -4,26 +4,29 @@ import java.io.ByteArrayOutputStream;
 import java.nio.charset.Charset;
 import java.util.Collections;
 import java.util.List;
-
+import java.util.Optional;
 
 public class MyRequest {
 
     private final String protocol;
     private final String host;
-    private final String uri;
-    private final List<MyPair> headers;
-    private final List<MyPair> params;
+    private final String path;
+    private final List<MyParam> params;
+    private final List<MyHeader> headers;
+    private final List<MyCookie> cookies;
     private final byte[] content;
 
-    public MyRequest(String protocol, String host, String uri,
-            List<MyPair> headers,
-            List<MyPair> params,
+    public MyRequest(String protocol, String host, String path,
+            List<MyParam> params,
+            List<MyHeader> headers,
+            List<MyCookie> cookies,
             ByteArrayOutputStream content) {
         this.protocol = protocol;
         this.host = host;
-        this.uri = uri;
-        this.headers = Collections.unmodifiableList(headers);
+        this.path = path;
         this.params = Collections.unmodifiableList(params);
+        this.headers = Collections.unmodifiableList(headers);
+        this.cookies = Collections.unmodifiableList(cookies);
         this.content = content.toByteArray();
     }
 
@@ -35,20 +38,42 @@ public class MyRequest {
         return host;
     }
 
-    public String uri() {
-        return uri;
+    public String path() {
+        return path;
     }
 
-    public List<MyPair> headers() {
+    public List<MyParam> params() {
+        return params;
+    }
+
+    public List<MyHeader> headers() {
         return headers;
     }
 
-    public List<MyPair> params() {
-        return params;
+    public Optional<String> header(String name) {
+        return headers.stream().
+                filter(h -> h.name().equalsIgnoreCase(name)).
+                map(h -> h.value()).
+                findFirst();
+    }
+
+    public Optional<Charset> charset() {
+        return header("content-type").
+                filter(s -> s.contains("charset=")).
+                map(s -> s.substring(s.indexOf("charset=") + 8)).
+                map(Charset::forName);
+    }
+
+    public List<MyCookie> cookies() {
+        return cookies;
     }
 
     public int contentLength() {
         return content.length;
+    }
+
+    public byte[] content() {
+        return content;
     }
 
     public String content(Charset charset) {

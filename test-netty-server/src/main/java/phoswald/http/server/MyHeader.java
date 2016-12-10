@@ -1,10 +1,10 @@
 package phoswald.http.server;
 
-public class MyPair {
+public class MyHeader {
     private final String name;
     private final String value;
 
-    public MyPair(String name, String value) {
+    public MyHeader(String name, String value) {
         this.name = name;
         this.value = value;
     }

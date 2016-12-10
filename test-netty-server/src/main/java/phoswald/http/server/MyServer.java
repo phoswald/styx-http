@@ -2,7 +2,7 @@ package phoswald.http.server;
 
 import java.security.cert.CertificateException;
 import java.util.Optional;
-import java.util.function.Function;
+import java.util.function.BiConsumer;
 
 import javax.net.ssl.SSLException;
 
@@ -23,7 +23,7 @@ public class MyServer implements AutoCloseable {
     private final EventLoopGroup workerGroup = new NioEventLoopGroup();
     private boolean secure = false;
     private int port = 80;
-    private Function<MyRequest, MyResponse> handler;
+    private BiConsumer<MyRequest, MyResponse> handler;
 
     public MyServer() {
 
@@ -39,7 +39,7 @@ public class MyServer implements AutoCloseable {
         return this;
     }
 
-    public MyServer handler(Function<MyRequest, MyResponse> handler) {
+    public MyServer handler(BiConsumer<MyRequest, MyResponse> handler) {
         this.handler = handler;
         return this;
     }
