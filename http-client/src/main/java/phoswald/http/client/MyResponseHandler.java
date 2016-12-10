@@ -16,6 +16,8 @@ import io.netty.handler.codec.http.HttpUtil;
 import io.netty.handler.codec.http.LastHttpContent;
 import io.netty.handler.codec.http.cookie.ClientCookieDecoder;
 import io.netty.handler.codec.http.cookie.Cookie;
+import phoswald.http.MyCookie;
+import phoswald.http.MyHeader;
 
 class MyResponseHandler extends SimpleChannelInboundHandler<HttpObject> {
 

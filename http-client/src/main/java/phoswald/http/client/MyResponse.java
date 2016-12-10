@@ -6,14 +6,17 @@ import java.util.Collections;
 import java.util.List;
 import java.util.Optional;
 
+import phoswald.http.MyCookie;
+import phoswald.http.MyHeader;
+
 public class MyResponse {
 
-    private String status;
-    private String version;
-    private boolean chunked;
+    private final String status;
+    private final String version;
+    private final boolean chunked;
     private final List<MyHeader> headers;
     private final List<MyCookie> cookies;
-    private byte[] content;
+    private final byte[] content;
 
     MyResponse(String status, String version, boolean chunked,
             List<MyHeader> headers,

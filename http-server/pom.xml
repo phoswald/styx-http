@@ -23,6 +23,11 @@
 
   <dependencies>
     <dependency>
+      <groupId>com.github.phoswald</groupId>
+      <artifactId>http-shared</artifactId>
+      <version>0.0.1-SNAPSHOT</version>
+    </dependency>
+    <dependency>
       <groupId>io.netty</groupId>
       <artifactId>netty-handler</artifactId>
       <version>${netty.version}</version>

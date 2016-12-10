@@ -18,6 +18,8 @@ import io.netty.handler.codec.http.HttpHeaderValues;
 import io.netty.handler.codec.http.HttpResponseStatus;
 import io.netty.handler.codec.http.HttpVersion;
 import io.netty.handler.codec.http.cookie.ServerCookieEncoder;
+import phoswald.http.MyCookie;
+import phoswald.http.MyHeader;
 
 public class MyResponse {
 

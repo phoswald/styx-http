@@ -1,10 +1,10 @@
-package phoswald.http.server;
+package phoswald.http;
 
-public class MyCookie {
+public class MyParam {
     private final String name;
     private final String value;
 
-    public MyCookie(String name, String value) {
+    public MyParam(String name, String value) {
         this.name = name;
         this.value = value;
     }

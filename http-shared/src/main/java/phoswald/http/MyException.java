@@ -1,4 +1,4 @@
-package phoswald.http.client;
+package phoswald.http;
 
 public class MyException extends RuntimeException {
 

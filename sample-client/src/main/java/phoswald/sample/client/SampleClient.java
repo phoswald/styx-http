@@ -8,10 +8,10 @@ import java.util.List;
 import java.util.Optional;
 import java.util.concurrent.CompletableFuture;
 
+import phoswald.http.MyCookie;
+import phoswald.http.MyException;
+import phoswald.http.MyHeader;
 import phoswald.http.client.MyClient;
-import phoswald.http.client.MyCookie;
-import phoswald.http.client.MyException;
-import phoswald.http.client.MyHeader;
 import phoswald.http.client.MyResponse;
 
 public final class SampleClient {

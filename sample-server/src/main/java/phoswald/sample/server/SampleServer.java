@@ -3,9 +3,9 @@ package phoswald.sample.server;
 import java.nio.charset.Charset;
 import java.nio.charset.StandardCharsets;
 
-import phoswald.http.server.MyCookie;
-import phoswald.http.server.MyHeader;
-import phoswald.http.server.MyParam;
+import phoswald.http.MyCookie;
+import phoswald.http.MyHeader;
+import phoswald.http.MyParam;
 import phoswald.http.server.MyRequest;
 import phoswald.http.server.MyResponse;
 import phoswald.http.server.MyServer;

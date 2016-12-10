@@ -10,12 +10,12 @@ import io.netty.handler.codec.http.HttpRequestDecoder;
 import io.netty.handler.codec.http.HttpResponseEncoder;
 import io.netty.handler.ssl.SslContext;
 
-public class MyChannelInitializer extends ChannelInitializer<SocketChannel> {
+class MyChannelInitializer extends ChannelInitializer<SocketChannel> {
 
     private final Optional<SslContext> sslContext;
     private final BiConsumer<MyRequest, MyResponse> handler;
 
-    public MyChannelInitializer(Optional<SslContext> sslContext, BiConsumer<MyRequest, MyResponse> handler) {
+    MyChannelInitializer(Optional<SslContext> sslContext, BiConsumer<MyRequest, MyResponse> handler) {
         this.sslContext = sslContext;
         this.handler = handler;
     }

@@ -8,7 +8,7 @@
     <relativePath />
   </parent>
 
-  <artifactId>http-client</artifactId>
+  <artifactId>http-shared</artifactId>
   <version>0.0.1-SNAPSHOT</version>
   <packaging>jar</packaging>
 
@@ -18,25 +18,9 @@
 
   <properties>
     <project.build.sourceEncoding>UTF-8</project.build.sourceEncoding>
-    <netty.version>4.1.6.Final</netty.version>
   </properties>
 
   <dependencies>
-    <dependency>
-      <groupId>com.github.phoswald</groupId>
-      <artifactId>http-shared</artifactId>
-      <version>0.0.1-SNAPSHOT</version>
-    </dependency>
-    <dependency>
-      <groupId>io.netty</groupId>
-      <artifactId>netty-handler</artifactId>
-      <version>${netty.version}</version>
-    </dependency>
-    <dependency>
-      <groupId>io.netty</groupId>
-      <artifactId>netty-codec-http</artifactId>
-      <version>${netty.version}</version>
-    </dependency>
     <dependency>
       <groupId>junit</groupId>
       <artifactId>junit</artifactId>

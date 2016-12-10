@@ -23,8 +23,11 @@ import io.netty.handler.codec.http.LastHttpContent;
 import io.netty.handler.codec.http.QueryStringDecoder;
 import io.netty.handler.codec.http.cookie.Cookie;
 import io.netty.handler.codec.http.cookie.ServerCookieDecoder;
+import phoswald.http.MyCookie;
+import phoswald.http.MyHeader;
+import phoswald.http.MyParam;
 
-public class MyRequestHandler extends SimpleChannelInboundHandler<Object> {
+class MyRequestHandler extends SimpleChannelInboundHandler<Object> {
 
     private final BiConsumer<MyRequest, MyResponse> handler;
 
@@ -37,7 +40,7 @@ public class MyRequestHandler extends SimpleChannelInboundHandler<Object> {
     private final List<MyCookie> cookies = new ArrayList<>();
     private final ByteArrayOutputStream content = new ByteArrayOutputStream();
 
-    public MyRequestHandler(BiConsumer<MyRequest, MyResponse> handler) {
+    MyRequestHandler(BiConsumer<MyRequest, MyResponse> handler) {
         this.handler = handler;
     }
 

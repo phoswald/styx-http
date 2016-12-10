@@ -20,6 +20,9 @@ import io.netty.handler.codec.http.QueryStringEncoder;
 import io.netty.handler.codec.http.cookie.ClientCookieEncoder;
 import io.netty.handler.codec.http.cookie.DefaultCookie;
 import io.netty.handler.ssl.SslContext;
+import phoswald.http.MyCookie;
+import phoswald.http.MyHeader;
+import phoswald.http.MyParam;
 
 public class MyRequest {
 

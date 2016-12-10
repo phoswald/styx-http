@@ -1,4 +1,4 @@
-package phoswald.http.server;
+package phoswald.http;
 
 public class MyHeader {
     private final String name;

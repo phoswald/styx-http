@@ -6,6 +6,10 @@ import java.util.Collections;
 import java.util.List;
 import java.util.Optional;
 
+import phoswald.http.MyCookie;
+import phoswald.http.MyHeader;
+import phoswald.http.MyParam;
+
 public class MyRequest {
 
     private final String protocol;
