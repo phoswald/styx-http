@@ -10,12 +10,12 @@ import io.netty.handler.codec.http.HttpRequestDecoder;
 import io.netty.handler.codec.http.HttpResponseEncoder;
 import io.netty.handler.ssl.SslContext;
 
-class MyChannelInitializer extends ChannelInitializer<SocketChannel> {
+class ServerChannelInitializer extends ChannelInitializer<SocketChannel> {
 
     private final Optional<SslContext> sslContext;
-    private final BiConsumer<MyRequest, MyResponse> handler;
+    private final BiConsumer<Request, Response> handler;
 
-    MyChannelInitializer(Optional<SslContext> sslContext, BiConsumer<MyRequest, MyResponse> handler) {
+    ServerChannelInitializer(Optional<SslContext> sslContext, BiConsumer<Request, Response> handler) {
         this.sslContext = sslContext;
         this.handler = handler;
     }
@@ -30,6 +30,6 @@ class MyChannelInitializer extends ChannelInitializer<SocketChannel> {
         //p.addLast(new HttpObjectAggregator(1048576));
         pipeline.addLast(new HttpResponseEncoder());
         //p.addLast(new HttpContentCompressor());
-        pipeline.addLast(new MyRequestHandler(handler));
+        pipeline.addLast(new RequestHandler(handler));
     }
 }

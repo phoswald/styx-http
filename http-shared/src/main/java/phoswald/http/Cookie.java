@@ -1,10 +1,10 @@
 package phoswald.http;
 
-public class MyHeader {
+public class Cookie {
     private final String name;
     private final String value;
 
-    public MyHeader(String name, String value) {
+    public Cookie(String name, String value) {
         this.name = name;
         this.value = value;
     }

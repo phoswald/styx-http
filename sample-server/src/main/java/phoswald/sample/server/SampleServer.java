@@ -3,12 +3,12 @@ package phoswald.sample.server;
 import java.nio.charset.Charset;
 import java.nio.charset.StandardCharsets;
 
-import phoswald.http.MyCookie;
-import phoswald.http.MyHeader;
-import phoswald.http.MyParam;
-import phoswald.http.server.MyRequest;
-import phoswald.http.server.MyResponse;
-import phoswald.http.server.MyServer;
+import phoswald.http.Cookie;
+import phoswald.http.Header;
+import phoswald.http.QueryParam;
+import phoswald.http.server.Request;
+import phoswald.http.server.Response;
+import phoswald.http.server.Server;
 
 public final class SampleServer {
 
@@ -24,7 +24,7 @@ public final class SampleServer {
         System.err.println("Open your web browser and navigate to " +
                 (SSL? "https" : "http") + "://127.0.0.1:" + PORT + '/');
 
-        try(MyServer server = new MyServer()) {
+        try(Server server = new Server()) {
             server.
                 port(PORT).
                 secure(SSL).
@@ -33,7 +33,7 @@ public final class SampleServer {
         }
     }
 
-    private MyResponse handle(MyRequest request, MyResponse response) {
+    private Response handle(Request request, Response response) {
         response.append("WELCÖME TO THE WILD WILD WEB SERVER\r\n");
         response.append("===================================\r\n");
 
@@ -41,15 +41,15 @@ public final class SampleServer {
         response.append("HOSTNAME: ").append(request.host()).append("\r\n");
         response.append("PATH:     ").append(request.path()).append("\r\n\r\n");
 
-        for (MyParam param: request.params()) {
+        for (QueryParam param: request.params()) {
             response.append("PARAM ").append(param.name()).append("=").append(param.value()).append("\r\n");
         }
 
-        for (MyHeader header: request.headers()) {
+        for (Header header: request.headers()) {
             response.append("HEADER ").append(header.name()).append(": ").append(header.value()).append("\r\n");
         }
 
-        for(MyCookie cookie : request.cookies()) {
+        for(Cookie cookie : request.cookies()) {
             response.append("COOKIE ").append(cookie.name()).append("=").append(cookie.value()).append("\r\n");
         }
 
@@ -61,7 +61,7 @@ public final class SampleServer {
             response.cookie("my-server-other", "foobar");
         } else {
             // send back cookies sent by client
-            for(MyCookie cookie : request.cookies()) {
+            for(Cookie cookie : request.cookies()) {
                 response.cookie(cookie.name(), cookie.value());
             }
         }

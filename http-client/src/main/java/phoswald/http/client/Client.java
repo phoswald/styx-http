@@ -9,14 +9,14 @@ import io.netty.channel.nio.NioEventLoopGroup;
 import io.netty.handler.ssl.SslContext;
 import io.netty.handler.ssl.SslContextBuilder;
 import io.netty.handler.ssl.util.InsecureTrustManagerFactory;
-import phoswald.http.MyException;
+import phoswald.http.HttpException;
 
-public class MyClient implements AutoCloseable {
+public class Client implements AutoCloseable {
 
     private final EventLoopGroup eventLoopGroup;
     private final SslContext sslContext;
 
-    public MyClient() {
+    public Client() {
         this.eventLoopGroup = new NioEventLoopGroup();
         this.sslContext = createSslContext();
         System.out.println("[CLIENT NIO GROUP: START]");
@@ -29,8 +29,8 @@ public class MyClient implements AutoCloseable {
         System.out.println("[CLIENT NIO GROUP: STOP]");
     }
 
-    public MyRequest request() {
-        return new MyRequest(eventLoopGroup, sslContext);
+    public Request request() {
+        return new Request(eventLoopGroup, sslContext);
     }
 
     private static SslContext createSslContext() {
@@ -39,7 +39,7 @@ public class MyClient implements AutoCloseable {
                     trustManager(InsecureTrustManagerFactory.INSTANCE).
                     build();
         } catch (SSLException e) {
-            throw new MyException("Failed to create SSL context.", e);
+            throw new HttpException("Failed to create SSL context.", e);
         }
     }
 }

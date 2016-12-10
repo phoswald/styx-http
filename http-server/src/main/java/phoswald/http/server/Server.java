@@ -17,29 +17,29 @@ import io.netty.handler.ssl.SslContext;
 import io.netty.handler.ssl.SslContextBuilder;
 import io.netty.handler.ssl.util.SelfSignedCertificate;
 
-public class MyServer implements AutoCloseable {
+public class Server implements AutoCloseable {
 
     private final EventLoopGroup bossGroup = new NioEventLoopGroup(1);
     private final EventLoopGroup workerGroup = new NioEventLoopGroup();
     private boolean secure = false;
     private int port = 80;
-    private BiConsumer<MyRequest, MyResponse> handler;
+    private BiConsumer<Request, Response> handler;
 
-    public MyServer() {
+    public Server() {
 
     }
 
-    public MyServer secure(boolean secure) {
+    public Server secure(boolean secure) {
         this.secure = secure;
         return this;
     }
 
-    public MyServer port(int port) {
+    public Server port(int port) {
         this.port = port;
         return this;
     }
 
-    public MyServer handler(BiConsumer<MyRequest, MyResponse> handler) {
+    public Server handler(BiConsumer<Request, Response> handler) {
         this.handler = handler;
         return this;
     }
@@ -57,7 +57,7 @@ public class MyServer implements AutoCloseable {
         b.group(bossGroup, workerGroup)
                 .channel(NioServerSocketChannel.class)
                 .handler(new LoggingHandler(LogLevel.INFO))
-                .childHandler(new MyChannelInitializer(Optional.ofNullable(sslCtx), handler));
+                .childHandler(new ServerChannelInitializer(Optional.ofNullable(sslCtx), handler));
 
         Channel ch = b.bind(port).sync().channel();
 

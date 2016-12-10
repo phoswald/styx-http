@@ -8,17 +8,17 @@ import java.util.List;
 import java.util.Optional;
 import java.util.concurrent.CompletableFuture;
 
-import phoswald.http.MyCookie;
-import phoswald.http.MyException;
-import phoswald.http.MyHeader;
-import phoswald.http.client.MyClient;
-import phoswald.http.client.MyResponse;
+import phoswald.http.Cookie;
+import phoswald.http.HttpException;
+import phoswald.http.Header;
+import phoswald.http.client.Client;
+import phoswald.http.client.Response;
 
 public final class SampleClient {
 
     private static final String URL = System.getProperty("url", "http://127.0.0.1:8080/");
 
-    private final List<MyCookie> cookies = new ArrayList<>();
+    private final List<Cookie> cookies = new ArrayList<>();
 
     public static void main(String[] args) throws URISyntaxException {
         new SampleClient().run(new URI(URL));
@@ -40,12 +40,12 @@ public final class SampleClient {
             }
             ssl = true;
         } else {
-            throw new MyException("Only http and https is supported");
+            throw new HttpException("Only http and https is supported");
         }
 
-        cookies.add(new MyCookie("my-client-stuff", "12345676789"));
+        cookies.add(new Cookie("my-client-stuff", "12345676789"));
 
-        try(MyClient client = new MyClient()) {
+        try(Client client = new Client()) {
 
             CompletableFuture<?> f1 = client.request().
                     secure(ssl).host(host).port(port).path(uri.getRawPath()).param("cnt", "1").
@@ -67,12 +67,12 @@ public final class SampleClient {
         }
     }
 
-    private synchronized void dumpResponse(MyResponse response) {
+    private synchronized void dumpResponse(Response response) {
         System.out.println("> " + response.status() + " " + response.version() + " (chunked=" + response.chunked() + ")");
-        for(MyHeader header : response.headers()) {
+        for(Header header : response.headers()) {
             System.out.println("> HEADER " + header.name() + ": " + header.value());
         }
-        for(MyCookie cookie : response.cookies()) {
+        for(Cookie cookie : response.cookies()) {
             System.out.println("> COOKIE " + cookie.name() + "=" + cookie.value());
         }
         if(response.contentLength() > 0) {

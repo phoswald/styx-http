@@ -18,44 +18,44 @@ import io.netty.handler.codec.http.HttpHeaderValues;
 import io.netty.handler.codec.http.HttpResponseStatus;
 import io.netty.handler.codec.http.HttpVersion;
 import io.netty.handler.codec.http.cookie.ServerCookieEncoder;
-import phoswald.http.MyCookie;
-import phoswald.http.MyHeader;
+import phoswald.http.Cookie;
+import phoswald.http.Header;
 
-public class MyResponse {
+public class Response {
 
     private int status = HttpResponseStatus.OK.code();
-    private final List<MyHeader> headers = new ArrayList<>();
-    private final List<MyCookie> cookies = new ArrayList<>();
+    private final List<Header> headers = new ArrayList<>();
+    private final List<Cookie> cookies = new ArrayList<>();
     private final ByteArrayOutputStream content = new ByteArrayOutputStream();
 
-    MyResponse() { }
+    Response() { }
 
-    public MyResponse status(int status) {
+    public Response status(int status) {
         this.status = status;
         return this;
     }
 
-    public MyResponse header(String name, String value) {
-        headers.add(new MyHeader(name, value));
+    public Response header(String name, String value) {
+        headers.add(new Header(name, value));
         return this;
     }
 
-    public MyResponse contentType(String contentType) {
+    public Response contentType(String contentType) {
         header(HttpHeaderNames.CONTENT_TYPE.toString(), contentType);
         return this;
     }
 
-    public MyResponse contentType(String contentType, Charset charset) {
+    public Response contentType(String contentType, Charset charset) {
         header(HttpHeaderNames.CONTENT_TYPE.toString(), contentType + "; charset=" + charset.name());
         return this;
     }
 
-    public MyResponse cookie(String name, String value) {
-        cookies.add(new MyCookie(name, value));
+    public Response cookie(String name, String value) {
+        cookies.add(new Cookie(name, value));
         return this;
     }
 
-    public MyResponse append(byte[] content) {
+    public Response append(byte[] content) {
         try {
             this.content.write(content);
             return this;
@@ -64,7 +64,7 @@ public class MyResponse {
         }
     }
 
-    public MyResponse append(String content) {
+    public Response append(String content) {
         return append(content.getBytes(StandardCharsets.UTF_8));
     }
 
@@ -76,12 +76,12 @@ public class MyResponse {
                 Unpooled.copiedBuffer(content.toByteArray()));
 
         // Set user-defined headers first
-        for(MyHeader header : headers) {
+        for(Header header : headers) {
             response.headers().add(header.name(), header.value());
         }
 
         // Set cookies, not replacing user-defined header
-        for(MyCookie cookie : cookies) {
+        for(Cookie cookie : cookies) {
             response.headers().add(HttpHeaderNames.SET_COOKIE, ServerCookieEncoder.STRICT.encode(cookie.name(), cookie.value()));
         }
 

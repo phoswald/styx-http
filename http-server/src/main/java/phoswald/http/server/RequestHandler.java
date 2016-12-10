@@ -8,7 +8,6 @@ import java.util.ArrayList;
 import java.util.List;
 import java.util.Map;
 import java.util.Map.Entry;
-import java.util.Set;
 import java.util.function.BiConsumer;
 
 import io.netty.channel.ChannelHandlerContext;
@@ -21,26 +20,25 @@ import io.netty.handler.codec.http.HttpRequest;
 import io.netty.handler.codec.http.HttpUtil;
 import io.netty.handler.codec.http.LastHttpContent;
 import io.netty.handler.codec.http.QueryStringDecoder;
-import io.netty.handler.codec.http.cookie.Cookie;
 import io.netty.handler.codec.http.cookie.ServerCookieDecoder;
-import phoswald.http.MyCookie;
-import phoswald.http.MyHeader;
-import phoswald.http.MyParam;
+import phoswald.http.Cookie;
+import phoswald.http.Header;
+import phoswald.http.QueryParam;
 
-class MyRequestHandler extends SimpleChannelInboundHandler<Object> {
+class RequestHandler extends SimpleChannelInboundHandler<Object> {
 
-    private final BiConsumer<MyRequest, MyResponse> handler;
+    private final BiConsumer<Request, Response> handler;
 
     private String protocol;
     private String host;
     private String path;
     private boolean keepAlive;
-    private final List<MyParam> params = new ArrayList<>();
-    private final List<MyHeader> headers = new ArrayList<>();
-    private final List<MyCookie> cookies = new ArrayList<>();
+    private final List<QueryParam> params = new ArrayList<>();
+    private final List<Header> headers = new ArrayList<>();
+    private final List<Cookie> cookies = new ArrayList<>();
     private final ByteArrayOutputStream content = new ByteArrayOutputStream();
 
-    MyRequestHandler(BiConsumer<MyRequest, MyResponse> handler) {
+    RequestHandler(BiConsumer<Request, Response> handler) {
         this.handler = handler;
     }
 
@@ -68,19 +66,18 @@ class MyRequestHandler extends SimpleChannelInboundHandler<Object> {
             Map<String, List<String>> paramMap = queryStringDecoder.parameters();
             for (Entry<String, List<String>> paramEntry : paramMap.entrySet()) {
                 for (String value : paramEntry.getValue()) {
-                    params.add(new MyParam(paramEntry.getKey(), value));
+                    params.add(new QueryParam(paramEntry.getKey(), value));
                 }
             }
 
             for (Map.Entry<String, String> header : message2.headers()) {
-                headers.add(new MyHeader(header.getKey(), header.getValue()));
+                headers.add(new Header(header.getKey(), header.getValue()));
             }
 
             String cookieString = message2.headers().get(HttpHeaderNames.COOKIE);
             if (cookieString != null) {
-                Set<Cookie> cookieSet = ServerCookieDecoder.STRICT.decode(cookieString);
-                for (Cookie cookie: cookieSet) {
-                    cookies.add(new MyCookie(cookie.name(), cookie.value()));
+                for (io.netty.handler.codec.http.cookie.Cookie cookie: ServerCookieDecoder.STRICT.decode(cookieString)) {
+                    cookies.add(new Cookie(cookie.name(), cookie.value()));
                 }
             }
         }
@@ -95,8 +92,8 @@ class MyRequestHandler extends SimpleChannelInboundHandler<Object> {
             }
 
             if (message instanceof LastHttpContent) {
-                MyRequest request = new MyRequest(protocol, host, path, params, headers, cookies, content);
-                MyResponse response = new MyResponse();
+                Request request = new Request(protocol, host, path, params, headers, cookies, content);
+                Response response = new Response();
                 handler.accept(request, response);
                 response.send(context, keepAlive, message2.decoderResult().isSuccess());
             }

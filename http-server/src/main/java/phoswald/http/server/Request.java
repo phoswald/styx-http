@@ -1,4 +1,4 @@
-package phoswald.http.client;
+package phoswald.http.server;
 
 import java.io.ByteArrayOutputStream;
 import java.nio.charset.Charset;
@@ -6,43 +6,51 @@ import java.util.Collections;
 import java.util.List;
 import java.util.Optional;
 
-import phoswald.http.MyCookie;
-import phoswald.http.MyHeader;
+import phoswald.http.Cookie;
+import phoswald.http.Header;
+import phoswald.http.QueryParam;
 
-public class MyResponse {
+public class Request {
 
-    private final String status;
-    private final String version;
-    private final boolean chunked;
-    private final List<MyHeader> headers;
-    private final List<MyCookie> cookies;
+    private final String protocol;
+    private final String host;
+    private final String path;
+    private final List<QueryParam> params;
+    private final List<Header> headers;
+    private final List<Cookie> cookies;
     private final byte[] content;
 
-    MyResponse(String status, String version, boolean chunked,
-            List<MyHeader> headers,
-            List<MyCookie> cookies,
+    public Request(String protocol, String host, String path,
+            List<QueryParam> params,
+            List<Header> headers,
+            List<Cookie> cookies,
             ByteArrayOutputStream content) {
-        this.status = status;
-        this.version = version;
-        this.chunked = chunked;
+        this.protocol = protocol;
+        this.host = host;
+        this.path = path;
+        this.params = Collections.unmodifiableList(params);
         this.headers = Collections.unmodifiableList(headers);
         this.cookies = Collections.unmodifiableList(cookies);
         this.content = content.toByteArray();
     }
 
-    public String status() {
-        return status;
+    public String protocol() {
+        return protocol;
     }
 
-    public String version() {
-        return version;
+    public String host() {
+        return host;
     }
 
-    public boolean chunked() {
-        return chunked;
+    public String path() {
+        return path;
     }
 
-    public List<MyHeader> headers() {
+    public List<QueryParam> params() {
+        return params;
+    }
+
+    public List<Header> headers() {
         return headers;
     }
 
@@ -60,7 +68,7 @@ public class MyResponse {
                 map(Charset::forName);
     }
 
-    public List<MyCookie> cookies() {
+    public List<Cookie> cookies() {
         return cookies;
     }
 

@@ -20,11 +20,11 @@ import io.netty.handler.codec.http.QueryStringEncoder;
 import io.netty.handler.codec.http.cookie.ClientCookieEncoder;
 import io.netty.handler.codec.http.cookie.DefaultCookie;
 import io.netty.handler.ssl.SslContext;
-import phoswald.http.MyCookie;
-import phoswald.http.MyHeader;
-import phoswald.http.MyParam;
+import phoswald.http.Cookie;
+import phoswald.http.Header;
+import phoswald.http.QueryParam;
 
-public class MyRequest {
+public class Request {
 
     private final EventLoopGroup eventLoopGroup;
     private final SslContext sslContext;
@@ -33,63 +33,63 @@ public class MyRequest {
     private String host = "localhost";
     private int port = 80;
     private String path = "/";
-    private final List<MyParam> params = new ArrayList<>();
-    private final List<MyHeader> headers = new ArrayList<>();
-    private final List<MyCookie> cookies = new ArrayList<>();
+    private final List<QueryParam> params = new ArrayList<>();
+    private final List<Header> headers = new ArrayList<>();
+    private final List<Cookie> cookies = new ArrayList<>();
 
-    MyRequest(EventLoopGroup group, SslContext sslContext) {
+    Request(EventLoopGroup group, SslContext sslContext) {
         this.sslContext = sslContext;
         this.eventLoopGroup = group;
     }
 
-    public MyRequest secure(boolean secure) {
+    public Request secure(boolean secure) {
         this.secure = secure;
         return this;
     }
 
-    public MyRequest host(String host) {
+    public Request host(String host) {
         this.host = host;
         return this;
     }
 
-    public MyRequest port(int port) {
+    public Request port(int port) {
         this.port = port;
         return this;
     }
 
-    public MyRequest path(String path) {
+    public Request path(String path) {
         this.path = path;
         return this;
     }
 
-    public MyRequest param(String name, String value) {
-        this.params.add(new MyParam(name, value));
+    public Request param(String name, String value) {
+        this.params.add(new QueryParam(name, value));
         return this;
     }
 
-    public MyRequest header(String name, String value) {
-        this.headers.add(new MyHeader(name, value));
+    public Request header(String name, String value) {
+        this.headers.add(new Header(name, value));
         return this;
     }
 
-    public MyRequest cookie(MyCookie cookie) {
+    public Request cookie(Cookie cookie) {
         this.cookies.add(cookie);
         return this;
     }
 
-    public MyRequest cookie(List<MyCookie> cookies) {
+    public Request cookie(List<Cookie> cookies) {
         this.cookies.addAll(cookies);
         return this;
     }
 
-    public CompletableFuture<MyResponse> get() {
+    public CompletableFuture<Response> get() {
         return send(HttpMethod.GET);
     }
 
-    private CompletableFuture<MyResponse> send(HttpMethod method) {
+    private CompletableFuture<Response> send(HttpMethod method) {
         // Build the URI by concatenating path and params
         QueryStringEncoder queryStringEncoder = new QueryStringEncoder(path);
-        for(MyParam param : params) {
+        for(QueryParam param : params) {
             queryStringEncoder.addParam(param.name(), param.value());
         }
 
@@ -97,7 +97,7 @@ public class MyRequest {
         HttpRequest request = new DefaultFullHttpRequest(HttpVersion.HTTP_1_1, method, queryStringEncoder.toString());
 
         // Set user-defined headers first
-        for(MyHeader header : headers) {
+        for(Header header : headers) {
             request.headers().add(header.name(), header.value());
         }
 
@@ -116,14 +116,14 @@ public class MyRequest {
                     ClientCookieEncoder.STRICT.encode(cookieList.toArray(new DefaultCookie[0])));
         }
 
-        CompletableFuture<MyResponse> responseFuture = new CompletableFuture<MyResponse>();
+        CompletableFuture<Response> responseFuture = new CompletableFuture<Response>();
 
         Bootstrap bootstrap = new Bootstrap().
             group(eventLoopGroup).
             channel(NioSocketChannel.class).
-            handler(new MyChannelInitializer(
+            handler(new ClientChannelInitializer(
                     secure ? Optional.of(sslContext) : Optional.empty(),
-                    new MyResponseHandler(responseFuture)));
+                    new ResponseHandler(responseFuture)));
 
         // Make the connection attempt.
         //Channel channel = bootstrap.connect(host, port).sync().channel();

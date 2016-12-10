@@ -15,22 +15,21 @@ import io.netty.handler.codec.http.HttpResponse;
 import io.netty.handler.codec.http.HttpUtil;
 import io.netty.handler.codec.http.LastHttpContent;
 import io.netty.handler.codec.http.cookie.ClientCookieDecoder;
-import io.netty.handler.codec.http.cookie.Cookie;
-import phoswald.http.MyCookie;
-import phoswald.http.MyHeader;
+import phoswald.http.Cookie;
+import phoswald.http.Header;
 
-class MyResponseHandler extends SimpleChannelInboundHandler<HttpObject> {
+class ResponseHandler extends SimpleChannelInboundHandler<HttpObject> {
 
-    private final CompletableFuture<MyResponse> future;
+    private final CompletableFuture<Response> future;
 
     private String status;
     private String version;
     private boolean chunked;
-    private final List<MyHeader> headers = new ArrayList<>();
-    private final List<MyCookie> cookies = new ArrayList<>();
+    private final List<Header> headers = new ArrayList<>();
+    private final List<Cookie> cookies = new ArrayList<>();
     private final ByteArrayOutputStream content = new ByteArrayOutputStream();
 
-    MyResponseHandler(CompletableFuture<MyResponse> future) {
+    ResponseHandler(CompletableFuture<Response> future) {
         this.future = future;
     }
 
@@ -44,12 +43,12 @@ class MyResponseHandler extends SimpleChannelInboundHandler<HttpObject> {
             chunked = HttpUtil.isTransferEncodingChunked(message2);
 
             for (Map.Entry<String, String> header : message2.headers()) {
-                headers.add(new MyHeader(header.getKey(), header.getValue()));
+                headers.add(new Header(header.getKey(), header.getValue()));
             }
 
             for(String header : message2.headers().getAll(HttpHeaderNames.SET_COOKIE)) {
-                Cookie cookie = ClientCookieDecoder.STRICT.decode(header);
-                cookies.add(new MyCookie(cookie.name(), cookie.value()));
+                io.netty.handler.codec.http.cookie.Cookie cookie = ClientCookieDecoder.STRICT.decode(header);
+                cookies.add(new Cookie(cookie.name(), cookie.value()));
             }
         }
         if (message instanceof HttpContent) {
@@ -62,7 +61,7 @@ class MyResponseHandler extends SimpleChannelInboundHandler<HttpObject> {
             }
 
             if (message2 instanceof LastHttpContent) {
-                future.complete(new MyResponse(status, version, chunked, headers, cookies, content));
+                future.complete(new Response(status, version, chunked, headers, cookies, content));
                 context.close();
             }
         }
