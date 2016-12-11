@@ -2,6 +2,7 @@ package phoswald.http.server;
 
 import java.util.Optional;
 import java.util.function.BiConsumer;
+import java.util.logging.Logger;
 
 import io.netty.bootstrap.ServerBootstrap;
 import io.netty.channel.Channel;
@@ -17,13 +18,21 @@ import phoswald.http.HttpException;
 
 public class Server implements AutoCloseable {
 
-    private final EventLoopGroup bossGroup = new NioEventLoopGroup(1);
-    private final EventLoopGroup workerGroup = new NioEventLoopGroup();
+    private static final Logger logger = Logger.getLogger(Server.class.getName());
+
+    private final EventLoopGroup bossGroup;
+    private final EventLoopGroup workerGroup;
+    private Channel channel;
+
     private boolean secure = false;
     private int port = 80;
     private BiConsumer<Request, Response> handler;
 
-    public Server() { }
+    public Server() {
+        bossGroup = new NioEventLoopGroup(1);
+        workerGroup = new NioEventLoopGroup();
+        logger.info("Started server NIO groups.");
+    }
 
     public Server secure(boolean secure) {
         this.secure = secure;
@@ -45,31 +54,40 @@ public class Server implements AutoCloseable {
         return this;
     }
 
-    public void run() {
+    public void start() {
         Optional<SslContext> sslContext = createSslContext();
+        ServerBootstrap bootstrap = new ServerBootstrap().
+                group(bossGroup, workerGroup).
+                channel(NioServerSocketChannel.class).
+                handler(new LoggingHandler(LogLevel.INFO)).
+                childHandler(new ServerChannelInitializer(sslContext, handler));
 
-        ServerBootstrap bootstrap = new ServerBootstrap();
-        bootstrap.group(bossGroup, workerGroup)
-                .channel(NioServerSocketChannel.class)
-                .handler(new LoggingHandler(LogLevel.INFO))
-                .childHandler(new ServerChannelInitializer(sslContext, handler));
+        channel = bootstrap.bind(port).syncUninterruptibly().channel();
+        logger.info("Started " + protocol() + " server on port " + port);
+    }
 
-        try {
-            Channel channel = bootstrap.bind(port).sync().channel();
-            channel.closeFuture().sync();
-        } catch (InterruptedException e) {
-            throw new HttpException(null, e);
-        }
+    public void run() {
+        start();
+        channel.closeFuture().syncUninterruptibly();
     }
 
     @Override
     public void close() {
-        bossGroup.shutdownGracefully();
-        workerGroup.shutdownGracefully();
+        if(channel != null) {
+            logger.info("Stopping " + protocol() + " server on port " + port);
+            channel.close().syncUninterruptibly();
+        }
+        logger.info("Stopping server NIO groups."); // TODO: shutdown semantics and performance?
+        bossGroup.shutdownGracefully()/*.syncUninterruptibly()*/;
+        workerGroup.shutdownGracefully()/*.syncUninterruptibly()*/;
     }
 
     public static Route.Builder route() {
         return new Route.Builder();
+    }
+
+    private String protocol() {
+        return secure ? "HTTPS" : "HTTP";
     }
 
     private Optional<SslContext> createSslContext() {

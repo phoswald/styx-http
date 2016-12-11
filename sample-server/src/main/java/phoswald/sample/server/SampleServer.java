@@ -23,7 +23,7 @@ public final class SampleServer {
     }
 
     private void run() {
-        System.err.println("Open your web browser and navigate to " +
+        System.out.println("Open your web browser and navigate to " +
                 (ssl ? "https" : "http") + "://127.0.0.1:" + port + '/');
 
         try(Server server = new Server()) {

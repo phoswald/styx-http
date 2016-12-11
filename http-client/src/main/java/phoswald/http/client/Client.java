@@ -1,6 +1,7 @@
 package phoswald.http.client;
 
 import java.util.concurrent.TimeUnit;
+import java.util.logging.Logger;
 
 import io.netty.channel.EventLoopGroup;
 import io.netty.channel.nio.NioEventLoopGroup;
@@ -11,20 +12,21 @@ import phoswald.http.HttpException;
 
 public class Client implements AutoCloseable {
 
+    private static final Logger logger = Logger.getLogger(Client.class.getName());
+
     private final EventLoopGroup eventLoopGroup;
     private final SslContext sslContext;
 
     public Client() {
         this.eventLoopGroup = new NioEventLoopGroup();
         this.sslContext = createSslContext();
-        System.out.println("[CLIENT NIO GROUP: START]");
+        logger.info("Started client NIO group.");
     }
 
     @Override
     public void close() {
-        eventLoopGroup.shutdownGracefully(0, 0, TimeUnit.MILLISECONDS).
-                syncUninterruptibly();
-        System.out.println("[CLIENT NIO GROUP: STOP]");
+        logger.info("Stopping client NIO group."); // TODO: shutdown semantics and performance?
+        eventLoopGroup.shutdownGracefully(0, 0, TimeUnit.MILLISECONDS).syncUninterruptibly();
     }
 
     public Request request() {
