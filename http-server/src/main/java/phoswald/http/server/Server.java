@@ -1,10 +1,7 @@
 package phoswald.http.server;
 
-import java.security.cert.CertificateException;
 import java.util.Optional;
 import java.util.function.BiConsumer;
-
-import javax.net.ssl.SSLException;
 
 import io.netty.bootstrap.ServerBootstrap;
 import io.netty.channel.Channel;
@@ -16,6 +13,7 @@ import io.netty.handler.logging.LoggingHandler;
 import io.netty.handler.ssl.SslContext;
 import io.netty.handler.ssl.SslContextBuilder;
 import io.netty.handler.ssl.util.SelfSignedCertificate;
+import phoswald.http.HttpException;
 
 public class Server implements AutoCloseable {
 
@@ -25,9 +23,7 @@ public class Server implements AutoCloseable {
     private int port = 80;
     private BiConsumer<Request, Response> handler;
 
-    public Server() {
-
-    }
+    public Server() { }
 
     public Server secure(boolean secure) {
         this.secure = secure;
@@ -49,29 +45,44 @@ public class Server implements AutoCloseable {
         return this;
     }
 
-    public void start() throws InterruptedException, SSLException, CertificateException {
-        final SslContext sslCtx;
-        if (secure) {
-            SelfSignedCertificate ssc = new SelfSignedCertificate();
-            sslCtx = SslContextBuilder.forServer(ssc.certificate(), ssc.privateKey()).build();
-        } else {
-            sslCtx = null;
-        }
+    public void run() {
+        Optional<SslContext> sslContext = createSslContext();
 
-        ServerBootstrap b = new ServerBootstrap();
-        b.group(bossGroup, workerGroup)
+        ServerBootstrap bootstrap = new ServerBootstrap();
+        bootstrap.group(bossGroup, workerGroup)
                 .channel(NioServerSocketChannel.class)
                 .handler(new LoggingHandler(LogLevel.INFO))
-                .childHandler(new ServerChannelInitializer(Optional.ofNullable(sslCtx), handler));
+                .childHandler(new ServerChannelInitializer(sslContext, handler));
 
-        Channel ch = b.bind(port).sync().channel();
-
-        ch.closeFuture().sync();
+        try {
+            Channel channel = bootstrap.bind(port).sync().channel();
+            channel.closeFuture().sync();
+        } catch (InterruptedException e) {
+            throw new HttpException(null, e);
+        }
     }
 
     @Override
-    public void close() throws Exception {
+    public void close() {
         bossGroup.shutdownGracefully();
         workerGroup.shutdownGracefully();
+    }
+
+    public static Route.Builder route() {
+        return new Route.Builder();
+    }
+
+    private Optional<SslContext> createSslContext() {
+        try {
+            if(secure) {
+                SelfSignedCertificate certificate = new SelfSignedCertificate();
+                return Optional.of(SslContextBuilder.forServer(
+                        certificate.certificate(), certificate.privateKey()).build());
+            } else {
+                return Optional.empty();
+            }
+        } catch (Exception e) {
+            throw new HttpException("Failed to create SSL context.", e);
+        }
     }
 }

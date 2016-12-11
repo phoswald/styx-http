@@ -50,6 +50,13 @@ public class Request {
         return params;
     }
 
+    public Optional<String> param(String name) {
+        return params.stream().
+                filter(p -> p.name().equals(name)).
+                map(p -> p.value()).
+                findFirst();
+    }
+
     public List<Header> headers() {
         return headers;
     }

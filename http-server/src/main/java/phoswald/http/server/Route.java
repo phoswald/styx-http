@@ -22,18 +22,14 @@ public class Route {
                 }
             }
             response.status(404).contentType("text/html", StandardCharsets.UTF_8).
-                append("<html>\n").
-                append("  <head><title>Page not found</title></head>\n").
-                append("  <body>\n").
-                append("    <h1>HTTP Error 404</h1>\n").
-                append("    <p>Page not found</p>\n").
-                append("  </body>\n").
-                append("</html>\n");
+                write("<html>\n").
+                write("  <head><title>Page not found</title></head>\n").
+                write("  <body>\n").
+                write("    <h1>HTTP Error 404</h1>\n").
+                write("    <p>Page not found</p>\n").
+                write("  </body>\n").
+                write("</html>\n");
         };
-    }
-
-    public static Builder bind() {
-        return new Builder();
     }
 
     public static class Builder {

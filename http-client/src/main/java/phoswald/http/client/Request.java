@@ -4,6 +4,7 @@ import java.util.ArrayList;
 import java.util.List;
 import java.util.Optional;
 import java.util.concurrent.CompletableFuture;
+import java.util.concurrent.CompletionStage;
 import java.util.stream.Collectors;
 
 import io.netty.bootstrap.Bootstrap;
@@ -82,11 +83,11 @@ public class Request {
         return this;
     }
 
-    public CompletableFuture<Response> get() {
+    public CompletionStage<Response> get() {
         return send(HttpMethod.GET);
     }
 
-    private CompletableFuture<Response> send(HttpMethod method) {
+    private CompletionStage<Response> send(HttpMethod method) {
         // Build the URI by concatenating path and params
         QueryStringEncoder queryStringEncoder = new QueryStringEncoder(path);
         for(QueryParam param : params) {

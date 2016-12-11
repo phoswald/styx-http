@@ -1,7 +1,9 @@
 package phoswald.http.server;
 
 import java.io.ByteArrayOutputStream;
+import java.io.FileNotFoundException;
 import java.io.IOException;
+import java.io.InputStream;
 import java.io.UncheckedIOException;
 import java.nio.charset.Charset;
 import java.nio.charset.StandardCharsets;
@@ -55,17 +57,45 @@ public class Response {
         return this;
     }
 
-    public Response append(byte[] content) {
+    public Response write(byte[] content) {
+        return write(content, 0, content.length);
+    }
+
+    public Response write(byte[] content, int offset, int length) {
+        this.content.write(content, offset, length);
+        return this;
+    }
+
+    public Response write(String content) {
+        return write(content.getBytes(StandardCharsets.UTF_8)); // TODO remove charset from here
+    }
+
+    public Response write(InputStream stream) {
         try {
-            this.content.write(content);
+            byte[] buffer = new byte[1024];
+            while(true) {
+                int length = stream.read(buffer);
+                if(length > 0) {
+                    this.content.write(buffer, 0, length);
+                } else if(length == -1) {
+                    break;
+                }
+            }
             return this;
-        } catch(IOException e) {
+        } catch (IOException e) {
             throw new UncheckedIOException(e);
         }
     }
 
-    public Response append(String content) {
-        return append(content.getBytes(StandardCharsets.UTF_8));
+    public Response writeResource(String name) {
+        try(InputStream stream = getClass().getResourceAsStream(name)) {
+            if(stream == null) {
+                throw new FileNotFoundException("File not found on classpath: " + name);
+            }
+            return write(stream);
+        } catch (IOException e) {
+            throw new UncheckedIOException(e);
+        }
     }
 
     void send(ChannelHandlerContext context, boolean requestValid, boolean keepAlive) {

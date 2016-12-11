@@ -1,69 +1,50 @@
 package phoswald.sample.client;
 
-import java.net.URI;
-import java.net.URISyntaxException;
 import java.nio.charset.Charset;
 import java.util.ArrayList;
 import java.util.List;
-import java.util.Optional;
-import java.util.concurrent.CompletableFuture;
+import java.util.concurrent.CompletionStage;
 
 import phoswald.http.Cookie;
-import phoswald.http.HttpException;
 import phoswald.http.Header;
 import phoswald.http.client.Client;
 import phoswald.http.client.Response;
 
 public final class SampleClient {
 
-    private static final String URL = System.getProperty("url", "http://127.0.0.1:8080/");
+    private final boolean ssl = Boolean.parseBoolean(System.getProperty("ssl", "false"));
+    private final String host = System.getProperty("host", "localhost");
+    private final int port = Integer.parseInt(System.getProperty("port", ssl ? "8443" : "8080"));
+    private final String path = System.getProperty("path", "/");
 
     private final List<Cookie> cookies = new ArrayList<>();
 
-    public static void main(String[] args) throws URISyntaxException {
-        new SampleClient().run(new URI(URL));
+    public static void main(String[] args) {
+        new SampleClient().run();
     }
 
-    private void run(URI uri) {
-        String scheme = Optional.ofNullable(uri.getScheme()).orElse("http");
-        String host = Optional.ofNullable(uri.getHost()).orElse("127.0.0.1");
-        int port = uri.getPort();
-        boolean ssl;
-        if(scheme.equals("http")) {
-            if(port == -1) {
-                port = 80;
-            }
-            ssl = false;
-        } else if(scheme.equals("https")) {
-            if(port == -1) {
-                port = 443;
-            }
-            ssl = true;
-        } else {
-            throw new HttpException("Only http and https is supported");
-        }
-
+    private void run() {
         cookies.add(new Cookie("my-client-stuff", "12345676789"));
 
         try(Client client = new Client()) {
 
-            CompletableFuture<?> f1 = client.request().
-                    secure(ssl).host(host).port(port).path(uri.getRawPath()).param("cnt", "1").
+            CompletionStage<?> f1 = client.request().
+                    secure(ssl).host(host).port(port).path(path).param("cnt", "1").
                     header("user-agent", "sampleclient/1.0.0").
                     cookie(cookies).
                     get().
                     thenAccept(this::dumpResponse).
                     exceptionally(this::dumpException);
 
-            CompletableFuture<?> f2 = client.request().
-                    secure(ssl).host(host).port(port).path(uri.getRawPath()).param("cnt", "2").
+            CompletionStage<?> f2 = client.request().
+                    secure(ssl).host(host).port(port).path(path).param("cnt", "2").
                     header("x-blubber", "something").
                     get().
                     thenAccept(this::dumpResponse).
                     exceptionally(this::dumpException);
 
-            f1.join();
-            f2.join();
+            f1.toCompletableFuture().join();
+            f2.toCompletableFuture().join();
         }
     }
 

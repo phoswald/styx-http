@@ -2,8 +2,6 @@ package phoswald.http.client;
 
 import java.util.concurrent.TimeUnit;
 
-import javax.net.ssl.SSLException;
-
 import io.netty.channel.EventLoopGroup;
 import io.netty.channel.nio.NioEventLoopGroup;
 import io.netty.handler.ssl.SslContext;
@@ -38,7 +36,7 @@ public class Client implements AutoCloseable {
             return SslContextBuilder.forClient().
                     trustManager(InsecureTrustManagerFactory.INSTANCE).
                     build();
-        } catch (SSLException e) {
+        } catch (Exception e) {
             throw new HttpException("Failed to create SSL context.", e);
         }
     }
