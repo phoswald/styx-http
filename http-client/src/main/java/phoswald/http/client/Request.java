@@ -123,7 +123,7 @@ public class Request {
             channel(NioSocketChannel.class).
             handler(new ClientChannelInitializer(
                     secure ? Optional.of(sslContext) : Optional.empty(),
-                    new ResponseHandler(responseFuture)));
+                    new ClientChannelHandler(responseFuture)));
 
         // Make the connection attempt.
         //Channel channel = bootstrap.connect(host, port).sync().channel();

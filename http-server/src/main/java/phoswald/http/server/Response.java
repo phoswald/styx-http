@@ -68,7 +68,7 @@ public class Response {
         return append(content.getBytes(StandardCharsets.UTF_8));
     }
 
-    void send(ChannelHandlerContext context, boolean keepAlive, boolean requestValid) {
+    void send(ChannelHandlerContext context, boolean requestValid, boolean keepAlive) {
         // Build the response object.
         FullHttpResponse response = new DefaultFullHttpResponse(
                 HttpVersion.HTTP_1_1,

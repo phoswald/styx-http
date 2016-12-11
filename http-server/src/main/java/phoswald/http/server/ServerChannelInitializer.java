@@ -30,6 +30,6 @@ class ServerChannelInitializer extends ChannelInitializer<SocketChannel> {
         //p.addLast(new HttpObjectAggregator(1048576));
         pipeline.addLast(new HttpResponseEncoder());
         //p.addLast(new HttpContentCompressor());
-        pipeline.addLast(new RequestHandler(handler));
+        pipeline.addLast(new ServerChannelHandler(handler));
     }
 }

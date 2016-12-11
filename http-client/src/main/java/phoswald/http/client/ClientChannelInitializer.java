@@ -12,9 +12,9 @@ import io.netty.handler.ssl.SslContext;
 class ClientChannelInitializer extends ChannelInitializer<SocketChannel> {
 
     private final Optional<SslContext> sslContext;
-    private final ResponseHandler responseHandler;
+    private final ClientChannelHandler responseHandler;
 
-    ClientChannelInitializer(Optional<SslContext> sslContext, ResponseHandler responseHandler) {
+    ClientChannelInitializer(Optional<SslContext> sslContext, ClientChannelHandler responseHandler) {
         this.sslContext = sslContext;
         this.responseHandler = responseHandler;
     }
