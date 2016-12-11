@@ -39,6 +39,11 @@ public class Server implements AutoCloseable {
         return this;
     }
 
+    public Server routes(Route... routes) {
+        this.handler = Route.combine(routes);
+        return this;
+    }
+
     public Server handler(BiConsumer<Request, Response> handler) {
         this.handler = handler;
         return this;

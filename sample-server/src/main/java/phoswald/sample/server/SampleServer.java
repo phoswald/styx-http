@@ -1,7 +1,13 @@
 package phoswald.sample.server;
 
+import static phoswald.http.server.Route.bind;
+
+import java.io.IOException;
+import java.io.InputStream;
+import java.io.UncheckedIOException;
 import java.nio.charset.Charset;
 import java.nio.charset.StandardCharsets;
+import java.time.LocalDateTime;
 
 import phoswald.http.Cookie;
 import phoswald.http.Header;
@@ -25,15 +31,18 @@ public final class SampleServer {
                 (SSL? "https" : "http") + "://127.0.0.1:" + PORT + '/');
 
         try(Server server = new Server()) {
-            server.
-                port(PORT).
-                secure(SSL).
-                handler(this::handle).
+            server.secure(SSL).port(PORT).
+                routes(
+                    bind().path("/").to(this::printRequestInfo),
+                    bind().path("/dump").to(this::printRequestInfo),
+                    bind().path("/favicon.ico").to(this::printIcon),
+                    bind().path("/ping").to((req, res) -> { res.append("Hello, world!"); }),
+                    bind().path("/time").to((req, res) -> { res.append(LocalDateTime.now().toString()); })).
                 start();
         }
     }
 
-    private Response handle(Request request, Response response) {
+    private void printRequestInfo(Request request, Response response) {
         response.append("WELCÖME TO THE WILD WILD WEB SERVER\r\n");
         response.append("===================================\r\n");
 
@@ -74,7 +83,16 @@ public final class SampleServer {
             response.append("\r\n");
             response.append("END OF CONTENT\r\n");
         }
+    }
 
-        return response;
+    private void printIcon(Request request, Response response) {
+        try(InputStream stream = getClass().getResourceAsStream("/favicon.ico")) {
+            byte[] content = new byte[stream.available()];
+            stream.read(content);
+            response.append(content);
+            response.contentType("image/x-icon");
+        } catch (IOException e) {
+            throw new UncheckedIOException(e);
+        }
     }
 }
