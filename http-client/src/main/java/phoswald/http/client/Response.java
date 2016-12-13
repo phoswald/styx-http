@@ -4,6 +4,7 @@ import java.io.ByteArrayOutputStream;
 import java.nio.charset.Charset;
 import java.util.Collections;
 import java.util.List;
+import java.util.Objects;
 import java.util.Optional;
 
 import phoswald.http.Cookie;
@@ -11,31 +12,31 @@ import phoswald.http.Header;
 
 public class Response {
 
-    private final String status;
     private final String version;
+    private final int status;
     private final boolean chunked;
     private final List<Header> headers;
     private final List<Cookie> cookies;
     private final byte[] content;
 
-    Response(String status, String version, boolean chunked,
+    Response(String version, int status, boolean chunked,
             List<Header> headers,
             List<Cookie> cookies,
             ByteArrayOutputStream content) {
+        this.version = Objects.requireNonNull(version);
         this.status = status;
-        this.version = version;
         this.chunked = chunked;
         this.headers = Collections.unmodifiableList(headers);
         this.cookies = Collections.unmodifiableList(cookies);
         this.content = content.toByteArray();
     }
 
-    public String status() {
-        return status;
-    }
-
     public String version() {
         return version;
+    }
+
+    public int status() {
+        return status;
     }
 
     public boolean chunked() {

@@ -15,16 +15,16 @@ import phoswald.http.Header;
 
 class ResponseBuilder {
 
-    private String status;
     private String version;
+    private int status;
     private boolean chunked;
     private final List<Header> headers = new ArrayList<>();
     private final List<Cookie> cookies = new ArrayList<>();
     private final ByteArrayOutputStream content = new ByteArrayOutputStream();
 
     void handle(HttpResponse message) {
-        status = message.status().toString();
         version = message.protocolVersion().toString();
+        status = message.status().code();
         chunked = HttpUtil.isTransferEncodingChunked(message);
 
         for (Map.Entry<String, String> header : message.headers()) {
@@ -46,6 +46,6 @@ class ResponseBuilder {
     }
 
     Response build() {
-        return new Response(status, version, chunked, headers, cookies, content);
+        return new Response(version, status, chunked, headers, cookies, content);
     }
 }

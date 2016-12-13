@@ -4,6 +4,7 @@ import java.io.ByteArrayOutputStream;
 import java.nio.charset.Charset;
 import java.util.Collections;
 import java.util.List;
+import java.util.Objects;
 import java.util.Optional;
 
 import phoswald.http.Cookie;
@@ -25,9 +26,9 @@ public class Request {
             List<Header> headers,
             List<Cookie> cookies,
             ByteArrayOutputStream content) {
-        this.protocol = protocol;
-        this.host = host;
-        this.path = path;
+        this.protocol = Objects.requireNonNull(protocol);
+        this.host = Objects.requireNonNull(host);
+        this.path = Objects.requireNonNull(path);
         this.params = Collections.unmodifiableList(params);
         this.headers = Collections.unmodifiableList(headers);
         this.cookies = Collections.unmodifiableList(cookies);

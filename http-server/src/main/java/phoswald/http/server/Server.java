@@ -93,7 +93,7 @@ public class Server implements AutoCloseable {
     private Optional<SslContext> createSslContext() {
         try {
             if(secure) {
-                SelfSignedCertificate certificate = new SelfSignedCertificate();
+                SelfSignedCertificate certificate = new SelfSignedCertificate("localhost");
                 return Optional.of(SslContextBuilder.forServer(
                         certificate.certificate(), certificate.privateKey()).build());
             } else {
