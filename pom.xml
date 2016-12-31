@@ -8,20 +8,24 @@
     <relativePath />
   </parent>
 
-  <artifactId>http-netty</artifactId>
+  <artifactId>styx-http</artifactId>
   <version>0.0.1-SNAPSHOT</version>
   <packaging>pom</packaging>
 
-  <name>${project.artifactId}</name>
-  <description>${project.artifactId}</description>
-  <url>https://github.com/phoswald/${project.artifactId}</url>
+  <description>A HTTP library based on Netty</description>
+  <url>https://github.com/phoswald/styx-http</url>
+
+  <properties>
+    <project.build.sourceEncoding>UTF-8</project.build.sourceEncoding>
+    <netty.version>4.1.6.Final</netty.version>
+  </properties>
 
   <modules>
-    <module>http-shared</module>
-    <module>http-server</module>
-    <module>http-client</module>
-    <module>sample-server</module>
-    <module>sample-client</module>
+    <module>styx-http-shared</module>
+    <module>styx-http-server</module>
+    <module>styx-http-client</module>
+    <module>examples/simple-server</module>
+    <module>examples/simple-client</module>
   </modules>
 
 </project>
