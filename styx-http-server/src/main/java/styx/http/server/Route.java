@@ -85,7 +85,7 @@ public class Route {
 
         public Route toResource(Path base) {
             return new Route(path, (req, res) -> {
-                Path file = base.resolve(req.param("**").orElse("."));
+                Path file = base.resolve(req.param("**").orElse(""));
                 res.writeResource(file);
             });
         }
@@ -96,7 +96,7 @@ public class Route {
 
         public Route toFileSystem(Path base) {
             return new Route(path, (req, res) -> {
-                Path file = base.resolve(req.param("**").orElse("."));
+                Path file = base.resolve(req.param("**").orElse(""));
                 if(Files.isDirectory(file)) {
                     res.contentType("text/html");
                     res.write("<html>");

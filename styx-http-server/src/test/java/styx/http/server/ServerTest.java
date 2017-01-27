@@ -32,7 +32,7 @@ public class ServerTest {
                     route().path("/binary").to((req, res) -> res.write(new byte[] { 1, 2, 3, 4 })),
                     route().path("/binaryTyped").to((req, res) -> res.contentType("application/pdf").write(new byte[] { 1, 2, 3, 4 })),
                     route().path("/file").to((req, res) -> res.writeFile(Paths.get("src/test/resources/test.txt"))),
-                    route().path("/resource").to((req, res) -> res.writeResource(Paths.get("/test.txt"))),
+                    route().path("/resource").toResource("/test.txt"),
                     route().path("/resources/**").toResource("/"),
                     route().path("/fileSystem/**").toFileSystem("src"),
                     route().path("/query").to((req, res) -> res.write("looking for " + req.param("filter").orElse("") + ".")),

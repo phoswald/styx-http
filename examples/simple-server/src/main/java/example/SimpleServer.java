@@ -31,11 +31,12 @@ public final class SimpleServer {
 
         try(Server server = new Server()) {
             server.secure(ssl).port(port).routes(
-                    route().path("/").to((req, res) -> res.contentType("text/html").writeResource("/index.html")),
-                    route().path("/favicon.ico").to((req, res) -> res.contentType("image/x-icon").writeResource("/favicon.ico")),
+                    route().path("/").toResource("index.html"),
+                    route().path("/favicon.ico").toResource("favicon.ico"),
                     route().path("/dump").to(this::dumpRequest),
                     route().path("/ping").to((req, res) -> res.write("Hello, world!\n")),
                     route().path("/greet").to((req, res) -> res.write("Hello, " + req.param("name").orElse("stranger") + "!\n")),
+                    route().path("/meet/{name}").to((req, res) -> res.write("Hello, " + req.param("{name}").get() + "!\n")),
                     route().path("/time").to((req, res) -> res.write(LocalDateTime.now().toString() + "\n")),
                     route().path("/content/**").toFileSystem(content)).
                 run();
