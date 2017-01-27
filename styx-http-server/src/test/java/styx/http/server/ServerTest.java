@@ -32,10 +32,11 @@ public class ServerTest {
                     route().path("/binary").to((req, res) -> res.write(new byte[] { 1, 2, 3, 4 })),
                     route().path("/binaryTyped").to((req, res) -> res.contentType("application/pdf").write(new byte[] { 1, 2, 3, 4 })),
                     route().path("/file").to((req, res) -> res.writeFile(Paths.get("src/test/resources/test.txt"))),
-                    route().path("/resource").to((req, res) -> res.writeResource("/test.txt")),
+                    route().path("/resource").to((req, res) -> res.writeResource(Paths.get("/test.txt"))),
+                    route().path("/resources/**").toResource("/"),
+                    route().path("/fileSystem/**").toFileSystem("src"),
                     route().path("/query").to((req, res) -> res.write("looking for " + req.param("filter").orElse("") + ".")),
-                    route().path("/noContent").to((req, res) -> res.status(201)),
-                    route().path("/fileSystem/**").toFileSystem(Paths.get("src"))));
+                    route().path("/noContent").to((req, res) -> res.status(201))));
 
     @Test
     public void getText_found_success() throws IOException {
@@ -73,16 +74,32 @@ public class ServerTest {
     public void getFile_found_success() throws IOException {
         HttpURLConnection connection = (HttpURLConnection) new URL("http://localhost:" + port + "/file").openConnection();
         assertEquals(200, connection.getResponseCode());
-        assertNull(connection.getContentType()); // TODO: guess from file name?
-        assertEquals("SOME TEXT\n", readResponseString(connection, StandardCharsets.UTF_8));
+        assertEquals("text/plain", connection.getContentType());
+        assertEquals("TEST FILESYSTEM CONTENT\n", readResponseString(connection, StandardCharsets.UTF_8));
     }
 
     @Test
     public void getResource_found_success() throws IOException {
         HttpURLConnection connection = (HttpURLConnection) new URL("http://localhost:" + port + "/resource").openConnection();
         assertEquals(200, connection.getResponseCode());
-        assertNull(connection.getContentType()); // TODO: guess from file name?
-        assertEquals("SOME TEXT\n", readResponseString(connection, StandardCharsets.UTF_8));
+        assertEquals("text/plain", connection.getContentType());
+        assertEquals("TEST CLASSPATH CONTENT\n", readResponseString(connection, StandardCharsets.UTF_8));
+    }
+
+    @Test
+    public void get_resources_found_success() throws IOException {
+        HttpURLConnection connection = (HttpURLConnection) new URL("http://localhost:" + port + "/resources/test.txt").openConnection();
+        assertEquals(200, connection.getResponseCode());
+        assertEquals("text/plain", connection.getContentType());
+        assertEquals("TEST CLASSPATH CONTENT\n", readResponseString(connection, StandardCharsets.UTF_8));
+    }
+
+    @Test
+    public void get_fileSystem_success() throws IOException {
+        HttpURLConnection connection = (HttpURLConnection) new URL("http://localhost:" + port + "/fileSystem/test/resources/test.txt").openConnection();
+        assertEquals(200, connection.getResponseCode());
+        assertEquals("text/plain", connection.getContentType());
+        assertEquals("TEST FILESYSTEM CONTENT\n", readResponseString(connection, StandardCharsets.UTF_8));
     }
 
     @Test
@@ -104,14 +121,6 @@ public class ServerTest {
         HttpURLConnection connection = (HttpURLConnection) new URL("http://localhost:" + port + "/noContent").openConnection();
         assertEquals(201, connection.getResponseCode());
         assertNull(connection.getContentType());
-    }
-
-    @Test
-    public void get_fileSystem_success() throws IOException {
-        HttpURLConnection connection = (HttpURLConnection) new URL("http://localhost:" + port + "/fileSystem/test/resources/test.txt").openConnection();
-        assertEquals(200, connection.getResponseCode());
-        assertEquals("text/plain", connection.getContentType()); // TODO: treat as text
-        assertEquals("SOME TEXT\n", readResponseString(connection, StandardCharsets.UTF_8));
     }
 
     @Test

@@ -10,6 +10,7 @@ import java.nio.charset.Charset;
 import java.nio.charset.StandardCharsets;
 import java.nio.file.Files;
 import java.nio.file.Path;
+import java.nio.file.Paths;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Objects;
@@ -114,22 +115,43 @@ public class Response {
         }
     }
 
-    public Response writeFile(Path file) {
-        try(InputStream stream = new BufferedInputStream(Files.newInputStream(file))) {
+    public Response writeResource(Path name) {
+        String resource = "/META-INF/resources" + Paths.get("/").resolve(name);
+        try(InputStream stream = getClass().getResourceAsStream(resource)) {
+            if(stream == null) {
+                throw new FileNotFoundException("File not found on classpath: " + name);
+            }
+            if(contentType == null) {
+                guessContentType(name);
+            }
             return write(stream);
         } catch (IOException e) {
             throw new UncheckedIOException(e);
         }
     }
 
-    public Response writeResource(String name) {
-        try(InputStream stream = getClass().getResourceAsStream(name)) {
-            if(stream == null) {
-                throw new FileNotFoundException("File not found on classpath: " + name);
+    public Response writeFile(Path file) {
+        try(InputStream stream = new BufferedInputStream(Files.newInputStream(file))) {
+            if(contentType == null) {
+                guessContentType(file);
             }
             return write(stream);
         } catch (IOException e) {
             throw new UncheckedIOException(e);
+        }
+    }
+
+    private void guessContentType(Path file) {
+        String fileName = file.getFileName().toString();
+        String extension = fileName.substring(fileName.lastIndexOf(".") + 1);
+        switch(extension.toLowerCase()) {
+            case "txt":  contentType("text/plain"); break;
+            case "htm":
+            case "html": contentType("text/html"); break;
+            case "xml":  contentType("application/xml"); break;
+            case "jpg":
+            case "jpeg": contentType("image/jpeg"); break;
+            case "ico":  contentType("image/x-icon"); break;
         }
     }
 

@@ -3,43 +3,75 @@ package styx.http.server;
 import java.io.IOException;
 import java.nio.file.Files;
 import java.nio.file.Path;
+import java.nio.file.Paths;
+import java.util.ArrayList;
+import java.util.List;
+import java.util.Objects;
+import java.util.Optional;
 import java.util.function.BiConsumer;
+
+import styx.http.QueryParam;
 
 public class Route {
 
-    private final String path;
+    private final Path path;
     private final BiConsumer<Request, Response> handler;
 
-    private Route(String path, BiConsumer<Request, Response> handler) {
+    private Route(Path path, BiConsumer<Request, Response> handler) {
         this.path = path;
         this.handler = handler;
     }
 
     static BiConsumer<Request, Response> combine(Route[] routes) {
         return (request, response) -> {
+            Path requestPath = Paths.get(request.path());
             for(Route route : routes) {
-                if(route.path.equals(request.path()) ||  // TODO C L E A N U P
-                        (route.path.endsWith("/**") && request.path().startsWith(route.path.substring(0, route.path.length()-2)))) {
+                Optional<List<QueryParam>> match = match(route.path, requestPath);
+                if(match.isPresent()) {
+                    request.addParams(match.get());
                     route.handler.accept(request, response);
                     return;
                 }
             }
-            response.status(404).contentType("text/html").
-                write("<html>\n").
-                write("  <head><title>Page not found</title></head>\n").
-                write("  <body>\n").
-                write("    <h1>HTTP Error 404</h1>\n").
-                write("    <p>Page not found</p>\n").
-                write("  </body>\n").
-                write("</html>\n");
+            response.status(404);
         };
     }
 
+    static Optional<List<QueryParam>> match(String pattern, String actual) {
+        return match(Paths.get(pattern), Paths.get(actual));
+    }
+
+    static Optional<List<QueryParam>> match(Path pattern, Path actual) {
+        int i = 0;
+        List<QueryParam> matches = new ArrayList<>();
+        while(i < pattern.getNameCount() && i < actual.getNameCount()) {
+            String patternName = pattern.getName(i).toString();
+            String actualName = actual.getName(i).toString();
+            if(patternName.startsWith("{") && patternName.endsWith("}")) {
+                matches.add(new QueryParam(patternName, actualName));
+            } else if(patternName.equals("**")) {
+                matches.add(new QueryParam("**", actual.subpath(i, actual.getNameCount()).toString()));
+                return Optional.of(matches);
+            } else if(!Objects.equals(patternName, actualName)) {
+                return Optional.empty();
+            }
+            i++;
+        }
+        if(i == pattern.getNameCount() && i == actual.getNameCount()) {
+            return Optional.of(matches);
+        } else if(i+1 == pattern.getNameCount() && pattern.getName(i).toString().equals("**") && i == actual.getNameCount()) {
+            matches.add(new QueryParam("**", "."));
+            return Optional.of(matches);
+        } else {
+            return Optional.empty();
+        }
+    }
+
     public static class Builder {
-        private String path;
+        private Path path;
 
         public Builder path(String path) {
-            this.path = path;
+            this.path = Paths.get(path);
             return this;
         }
 
@@ -47,13 +79,24 @@ public class Route {
             return new Route(path, handler);
         }
 
+        public Route toResource(String base) {
+            return toResource(Paths.get(base));
+        }
+
+        public Route toResource(Path base) {
+            return new Route(path, (req, res) -> {
+                Path file = base.resolve(req.param("**").orElse("."));
+                res.writeResource(file);
+            });
+        }
+
+        public Route toFileSystem(String base) {
+            return toFileSystem(Paths.get(base));
+        }
+
         public Route toFileSystem(Path base) {
             return new Route(path, (req, res) -> {
-                Path file = base.resolve(req.path().substring(this.path.length()-2)); // TODO C L E A N U P
-                System.out.println("HANDLING: req.path()=" + req.path());
-                System.out.println("          this.path =" + this.path);
-                System.out.println("          base      =" + base);
-                System.out.println("          ---->>>>> =" + file);
+                Path file = base.resolve(req.param("**").orElse("."));
                 if(Files.isDirectory(file)) {
                     res.contentType("text/html");
                     res.write("<html>");
@@ -73,17 +116,6 @@ public class Route {
                     res.write("</body>");
                     res.write("</html>");
                 } else if(Files.isRegularFile(file)) {
-                    String fileName = file.getFileName().toString();
-                    String extension = fileName.substring(fileName.lastIndexOf(".") + 1);
-                    switch(extension.toLowerCase()) {
-                        case "txt":  res.contentType("text/plain"); break;
-                        case "htm":
-                        case "html": res.contentType("text/html"); break;
-                        case "xml":  res.contentType("application/xml"); break;
-                        case "jpg":
-                        case "jpeg": res.contentType("image/jpeg"); break;
-                        case "ico":  res.contentType("image/x-icon"); break;
-                    }
                     res.writeFile(file);
                 } else {
                     res.status(404);

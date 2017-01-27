@@ -21,7 +21,7 @@ public class Request {
     private final List<Cookie> cookies;
     private final byte[] content;
 
-    public Request(String protocol, String host, String path,
+    Request(String protocol, String host, String path,
             List<QueryParam> params,
             List<Header> headers,
             List<Cookie> cookies,
@@ -29,10 +29,14 @@ public class Request {
         this.protocol = Objects.requireNonNull(protocol);
         this.host = Objects.requireNonNull(host);
         this.path = Objects.requireNonNull(path);
-        this.params = Collections.unmodifiableList(params);
+        this.params = Objects.requireNonNull(params); // TODO: Collections.unmodifiableList(params);
         this.headers = Collections.unmodifiableList(headers);
         this.cookies = Collections.unmodifiableList(cookies);
         this.content = content.toByteArray();
+    }
+
+    void addParams(List<QueryParam> params) {
+        this.params.addAll(params);
     }
 
     public String protocol() {

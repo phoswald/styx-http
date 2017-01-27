@@ -12,6 +12,7 @@ import java.util.Map.Entry;
 import io.netty.channel.ChannelHandlerContext;
 import io.netty.handler.codec.http.DefaultFullHttpResponse;
 import io.netty.handler.codec.http.FullHttpResponse;
+import io.netty.handler.codec.http.HttpConstants;
 import io.netty.handler.codec.http.HttpContent;
 import io.netty.handler.codec.http.HttpHeaderNames;
 import io.netty.handler.codec.http.HttpRequest;
@@ -26,6 +27,7 @@ class RequestBuilder {
 
     private boolean isValid;
     private boolean keepAlive;
+    private boolean postForm;
 
     private String protocol;
     private String host;
@@ -53,15 +55,11 @@ class RequestBuilder {
 
         keepAlive = HttpUtil.isKeepAlive(message);
         protocol = message.protocolVersion().toString();
+        postForm = message.headers().get(HttpHeaderNames.CONTENT_TYPE, "").equals("application/x-www-form-urlencoded");
         host = message.headers().get(HttpHeaderNames.HOST, "unknown");
         path = queryStringDecoder.path();
 
-        Map<String, List<String>> paramMap = queryStringDecoder.parameters();
-        for (Entry<String, List<String>> paramEntry : paramMap.entrySet()) {
-            for (String value : paramEntry.getValue()) {
-                params.add(new QueryParam(paramEntry.getKey(), value));
-            }
-        }
+        handleQueryString(queryStringDecoder);
 
         for (Map.Entry<String, String> header : message.headers()) {
             headers.add(new Header(header.getKey(), header.getValue()));
@@ -86,6 +84,19 @@ class RequestBuilder {
     }
 
     Request build() {
+        if(postForm) {
+            String queryString = new String(content.toByteArray(), HttpConstants.DEFAULT_CHARSET);
+            handleQueryString(new QueryStringDecoder(queryString, false));
+        }
         return new Request(protocol, host, path, params, headers, cookies, content);
+    }
+
+    private void handleQueryString(QueryStringDecoder queryStringDecoder) {
+        Map<String, List<String>> paramMap = queryStringDecoder.parameters();
+        for (Entry<String, List<String>> paramEntry : paramMap.entrySet()) {
+            for (String value : paramEntry.getValue()) {
+                params.add(new QueryParam(paramEntry.getKey(), value));
+            }
+        }
     }
 }
