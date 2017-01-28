@@ -116,7 +116,7 @@ public class Response {
     }
 
     public Response writeResource(Path name) {
-        String resource = "/META-INF/resources" + Paths.get("/").resolve(name);
+        String resource = "/META-INF/resources" + Paths.get("/").resolve(name).normalize();
         try(InputStream stream = getClass().getResourceAsStream(resource)) {
             if(stream == null) {
                 throw new FileNotFoundException("File not found on classpath: " + name);
