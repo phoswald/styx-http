@@ -145,13 +145,16 @@ public class Response {
         String fileName = file.getFileName().toString();
         String extension = fileName.substring(fileName.lastIndexOf(".") + 1);
         switch(extension.toLowerCase()) {
-            case "txt":  contentType("text/plain"); break;
+            case "css":  contentType("text/css"); break;
             case "htm":
             case "html": contentType("text/html"); break;
-            case "xml":  contentType("application/xml"); break;
+            case "ico":  contentType("image/x-icon"); break;
             case "jpg":
             case "jpeg": contentType("image/jpeg"); break;
-            case "ico":  contentType("image/x-icon"); break;
+            case "js":   contentType("application/javascript"); break;
+            case "json": contentType("application/json"); break;
+            case "txt":  contentType("text/plain"); break;
+            case "xml":  contentType("application/xml"); break;
         }
     }
 
