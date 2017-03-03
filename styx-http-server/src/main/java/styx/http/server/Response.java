@@ -11,6 +11,7 @@ import java.nio.charset.StandardCharsets;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.Paths;
+import java.time.Duration;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Objects;
@@ -56,6 +57,12 @@ public class Response {
 
     public Response cookie(String name, String value) {
         cookies.add(new Cookie(name, value));
+        return this;
+    }
+
+    public Response redirect(String location) {
+        status = HttpResponseStatus.SEE_OTHER.code();
+        header(HttpHeaderNames.LOCATION.toString(), location);
         return this;
     }
 
@@ -175,6 +182,7 @@ public class Response {
         for(Cookie cookie : cookies) {
             DefaultCookie c = new DefaultCookie(cookie.name(), cookie.value());
             c.setPath("/");
+            c.setMaxAge(Duration.ofDays(365).getSeconds());
             c.setHttpOnly(true);
             response.headers().add(HttpHeaderNames.SET_COOKIE, ServerCookieEncoder.STRICT.encode(c));
         }

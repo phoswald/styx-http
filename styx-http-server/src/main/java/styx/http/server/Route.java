@@ -70,6 +70,7 @@ public class Route {
     public static class Builder {
         private Path path;
         private SecurityProvider secure;
+        private String secureRedirectTo;
 
         public Builder path(String path) {
             this.path = Paths.get(path);
@@ -77,7 +78,12 @@ public class Route {
         }
 
         public Builder secure(SecurityProvider secure) {
+            return secure(secure, null);
+        }
+
+        public Builder secure(SecurityProvider secure, String redirectTo) {
             this.secure = Objects.requireNonNull(secure);
+            this.secureRedirectTo = redirectTo;
             return this;
         }
 
@@ -138,7 +144,11 @@ public class Route {
                             findFirst().
                             flatMap(c -> secure.checkCookie(c.value()));
                     if(!sessionParams.isPresent()) {
-                        res.status(401);
+                        if(secureRedirectTo != null) {
+                            res.redirect(secureRedirectTo);
+                        } else {
+                            res.status(401);
+                        }
                         return;
                     }
                     req.addParams(sessionParams.get());

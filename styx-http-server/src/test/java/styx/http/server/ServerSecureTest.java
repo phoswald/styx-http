@@ -41,6 +41,7 @@ public class ServerSecureTest {
             server -> server.secure(true).port(port).routes(
                     route().path("/text").to((req, res) -> res.write("RESPONSE_STRING_ÄÖÜ_€")),
                     route().secure(sp).path("/secret").to((req, res) -> res.write("Je t'aime, " + req.param("user").orElse(null) + ".")),
+                    route().secure(sp, "/login").path("/secretrd").to((req, res) -> { }),
                     route().path("/login").to((req, res) -> { sp.login(res, Duration.ofMinutes(60), new QueryParam("user", req.param("who").get())); })));
 
     @Test
@@ -55,6 +56,15 @@ public class ServerSecureTest {
         HttpsURLConnection connection = (HttpsURLConnection) new URL("https://localhost:" + port + "/secret").openConnection();
         assertEquals(401, connection.getResponseCode());
         assertEquals(0, connection.getContentLength());
+    }
+
+    @Test
+    public void getText_securedNoCookie_redirected() throws IOException {
+        HttpsURLConnection connection = (HttpsURLConnection) new URL("https://localhost:" + port + "/secretrd").openConnection();
+        connection.setInstanceFollowRedirects(false);
+        assertEquals(303, connection.getResponseCode());
+        assertEquals(0, connection.getContentLength());
+        assertEquals("/login", connection.getHeaderField("Location"));
     }
 
     @Test
