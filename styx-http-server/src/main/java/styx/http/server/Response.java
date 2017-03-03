@@ -24,6 +24,7 @@ import io.netty.handler.codec.http.HttpHeaderNames;
 import io.netty.handler.codec.http.HttpHeaderValues;
 import io.netty.handler.codec.http.HttpResponseStatus;
 import io.netty.handler.codec.http.HttpVersion;
+import io.netty.handler.codec.http.cookie.DefaultCookie;
 import io.netty.handler.codec.http.cookie.ServerCookieEncoder;
 import styx.http.Cookie;
 import styx.http.Header;
@@ -172,7 +173,10 @@ public class Response {
 
         // Set cookies, not replacing user-defined header
         for(Cookie cookie : cookies) {
-            response.headers().add(HttpHeaderNames.SET_COOKIE, ServerCookieEncoder.STRICT.encode(cookie.name(), cookie.value()));
+            DefaultCookie c = new DefaultCookie(cookie.name(), cookie.value());
+            c.setPath("/");
+            c.setHttpOnly(true);
+            response.headers().add(HttpHeaderNames.SET_COOKIE, ServerCookieEncoder.STRICT.encode(c));
         }
 
         // Set hardcoded headers, might replace user-defined ones

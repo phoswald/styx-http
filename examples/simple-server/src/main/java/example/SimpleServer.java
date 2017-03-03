@@ -6,13 +6,16 @@ import java.nio.charset.Charset;
 import java.nio.charset.StandardCharsets;
 import java.nio.file.Path;
 import java.nio.file.Paths;
+import java.time.Duration;
 import java.time.LocalDateTime;
 
 import styx.http.Cookie;
 import styx.http.Header;
 import styx.http.QueryParam;
+import styx.http.server.DefaultSecurityProvider;
 import styx.http.server.Request;
 import styx.http.server.Response;
+import styx.http.server.SecurityProvider;
 import styx.http.server.Server;
 
 public final class SimpleServer {
@@ -30,6 +33,7 @@ public final class SimpleServer {
                 (ssl ? "https" : "http") + "://127.0.0.1:" + port + '/');
 
         try(Server server = new Server()) {
+            SecurityProvider sp = new DefaultSecurityProvider();
             server.secure(ssl).port(port).routes(
                     route().path("/").toResource("index.html"),
                     route().path("/favicon.ico").toResource("favicon.ico"),
@@ -38,7 +42,9 @@ public final class SimpleServer {
                     route().path("/greet").to((req, res) -> res.write("Hello, " + req.param("name").orElse("stranger") + "!\n")),
                     route().path("/meet/{name}").to((req, res) -> res.write("Hello, " + req.param("{name}").get() + "!\n")),
                     route().path("/time").to((req, res) -> res.write(LocalDateTime.now().toString() + "\n")),
-                    route().path("/content/**").toFileSystem(content)).
+                    route().path("/content/**").toFileSystem(content),
+                    route().path("/login/{uid}").to((req, res) -> sp.login(res, Duration.ofDays(1), new QueryParam("uid", req.param("{uid}").get()))),
+                    route().secure(sp).path("/restricted").to((req, res) -> res.write("Secret stuff for you, " + req.param("uid").get() + "!"))).
                 run();
         }
     }

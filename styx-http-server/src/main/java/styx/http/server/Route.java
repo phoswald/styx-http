@@ -69,14 +69,20 @@ public class Route {
 
     public static class Builder {
         private Path path;
+        private SecurityProvider secure;
 
         public Builder path(String path) {
             this.path = Paths.get(path);
             return this;
         }
 
+        public Builder secure(SecurityProvider secure) {
+            this.secure = Objects.requireNonNull(secure);
+            return this;
+        }
+
         public Route to(BiConsumer<Request, Response> handler) {
-            return new Route(path, handler);
+            return build(path, handler);
         }
 
         public Route toResource(String base) {
@@ -84,7 +90,7 @@ public class Route {
         }
 
         public Route toResource(Path base) {
-            return new Route(path, (req, res) -> {
+            return build(path, (req, res) -> {
                 Path file = base.resolve(req.param("**").orElse(""));
                 res.writeResource(file);
             });
@@ -95,7 +101,7 @@ public class Route {
         }
 
         public Route toFileSystem(Path base) {
-            return new Route(path, (req, res) -> {
+            return build(path, (req, res) -> {
                 Path file = base.resolve(req.param("**").orElse(""));
                 if(Files.isDirectory(file)) {
                     res.contentType("text/html");
@@ -121,6 +127,27 @@ public class Route {
                     res.status(404);
                 }
             });
+        }
+
+        private Route build(Path path, BiConsumer<Request, Response> handler) {
+            BiConsumer<Request, Response> handler2;
+            if(secure != null) {
+                handler2 = (req, res) -> {
+                    Optional<List<QueryParam>> sessionParams = req.cookies().stream().
+                            filter(c -> c.name().equals(SecurityProvider.COOKIE_NAME)).
+                            findFirst().
+                            flatMap(c -> secure.checkCookie(c.value()));
+                    if(!sessionParams.isPresent()) {
+                        res.status(401);
+                        return;
+                    }
+                    req.addParams(sessionParams.get());
+                    handler.accept(req, res);
+                };
+            } else {
+                handler2 = handler;
+            }
+            return new Route(path, handler2);
         }
     }
 }
