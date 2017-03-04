@@ -15,6 +15,10 @@ public class ServerRule extends ExternalResource {
         this.configuration = configuration;
     }
 
+    public Server getServer() {
+        return server;
+    }
+
     @Override
     public void before() {
         server = new Server();
@@ -25,5 +29,6 @@ public class ServerRule extends ExternalResource {
     @Override
     protected void after() {
         server.close();
+        server = null;
     }
 }

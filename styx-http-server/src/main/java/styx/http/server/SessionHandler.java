@@ -17,53 +17,54 @@ import java.util.logging.Logger;
 
 import io.netty.handler.codec.http.QueryStringDecoder;
 import io.netty.handler.codec.http.QueryStringEncoder;
-import styx.http.QueryParam;
+import styx.http.SessionVariable;
 
-public class DefaultSecurityProvider implements SecurityProvider {
+class SessionHandler {
+
+    static final String COOKIE_NAME = "styx_session";
 
     private static final String HASH_NAME = "SHA-256";
+
     private static final int HASH_BYTES = 32;
 
-    private static final Logger logger = Logger.getLogger(DefaultSecurityProvider.class.getName());
+    private static final Logger logger = Logger.getLogger(SessionHandler.class.getName());
 
     private final byte[] secret;
 
-    public DefaultSecurityProvider() {
+    SessionHandler() {
         this("" + System.currentTimeMillis() + "/" + System.nanoTime()); // TODO: improve security (use more random bits)
     }
 
-    public DefaultSecurityProvider(String secret) {
+    SessionHandler(String secret) {
         this.secret = secret.getBytes(StandardCharsets.UTF_8);
     }
 
-    @Override
-    public String signCookie(List<QueryParam> sessionParams, Instant expiry) {
+    String encodeAndSignCookie(List<SessionVariable> sessionVariables, Instant expiry) {
         QueryStringEncoder queryStringEncoder = new QueryStringEncoder(Long.toString(expiry.getEpochSecond()));
-        for(QueryParam param : sessionParams) {
-            queryStringEncoder.addParam(param.name(), param.value());
+        for(SessionVariable variable : sessionVariables) {
+            queryStringEncoder.addParam(variable.name(), variable.value());
         }
         return hashAndEncode(queryStringEncoder.toString());
     }
 
-    @Override
-    public Optional<List<QueryParam>> checkCookie(String cookie) {
+    Optional<List<SessionVariable>> decodeAndVerifyCookie(String cookie) {
         Optional<String> payloadText = decodeAndVerifyHash(cookie);
         if(!payloadText.isPresent()) {
             return Optional.empty();
         }
         QueryStringDecoder queryStringDecoder = new QueryStringDecoder(payloadText.get());
-        List<QueryParam> sessionParams = new ArrayList<>();
+        List<SessionVariable> sessionVariables = new ArrayList<>();
         Map<String, List<String>> paramMap = queryStringDecoder.parameters();
         for (Entry<String, List<String>> paramEntry : paramMap.entrySet()) {
             for (String value : paramEntry.getValue()) {
-                sessionParams.add(new QueryParam(paramEntry.getKey(), value));
+                sessionVariables.add(new SessionVariable(paramEntry.getKey(), value));
             }
         }
         Instant expiry = Instant.ofEpochSecond(Long.parseLong(queryStringDecoder.path()));
         if(expiry.isBefore(Instant.now())) {
             return Optional.empty();
         }
-        return Optional.of(sessionParams);
+        return Optional.of(sessionVariables);
     }
 
     private String hashAndEncode(String payloadText) {

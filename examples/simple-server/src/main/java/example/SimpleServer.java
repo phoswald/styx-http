@@ -12,10 +12,9 @@ import java.time.LocalDateTime;
 import styx.http.Cookie;
 import styx.http.Header;
 import styx.http.QueryParam;
-import styx.http.server.DefaultSecurityProvider;
+import styx.http.SessionVariable;
 import styx.http.server.Request;
 import styx.http.server.Response;
-import styx.http.server.SecurityProvider;
 import styx.http.server.Server;
 
 public final class SimpleServer {
@@ -33,8 +32,7 @@ public final class SimpleServer {
                 (ssl ? "https" : "http") + "://127.0.0.1:" + port + '/');
 
         try(Server server = new Server()) {
-            SecurityProvider sp = new DefaultSecurityProvider();
-            server.secure(ssl).port(port).routes(
+            server.secure(ssl).port(port).enableSessions().routes(
                     route().path("/").toResource("index.html"),
                     route().path("/favicon.ico").toResource("favicon.ico"),
                     route().path("/dump").to(this::dumpRequest),
@@ -43,8 +41,8 @@ public final class SimpleServer {
                     route().path("/meet/{name}").to((req, res) -> res.write("Hello, " + req.param("{name}").get() + "!\n")),
                     route().path("/time").to((req, res) -> res.write(LocalDateTime.now().toString() + "\n")),
                     route().path("/content/**").toFileSystem(content),
-                    route().path("/login/{uid}").to((req, res) -> sp.login(res, Duration.ofDays(1), new QueryParam("uid", req.param("{uid}").get()))),
-                    route().secure(sp).path("/restricted").to((req, res) -> res.write("Secret stuff for you, " + req.param("uid").get() + "!"))).
+                    route().path("/login/{uid}").to((req, res) -> server.login(res, Duration.ofDays(1), new SessionVariable("uid", req.param("{uid}").get()))),
+                    route().requireSession().path("/restricted").to((req, res) -> res.write("Secret stuff for you, " + req.session("uid").get() + "!"))).
                 run();
         }
     }

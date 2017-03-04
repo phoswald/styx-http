@@ -26,8 +26,8 @@ public class Response {
         this.version = Objects.requireNonNull(version);
         this.status = status;
         this.chunked = chunked;
-        this.headers = Collections.unmodifiableList(headers);
-        this.cookies = Collections.unmodifiableList(cookies);
+        this.headers = Objects.requireNonNull(headers);
+        this.cookies = Objects.requireNonNull(cookies);
         this.content = content.toByteArray();
     }
 
@@ -44,7 +44,7 @@ public class Response {
     }
 
     public List<Header> headers() {
-        return headers;
+        return Collections.unmodifiableList(headers);
     }
 
     public Optional<String> header(String name) {
@@ -62,7 +62,7 @@ public class Response {
     }
 
     public List<Cookie> cookies() {
-        return cookies;
+        return Collections.unmodifiableList(cookies);
     }
 
     public int contentLength() {

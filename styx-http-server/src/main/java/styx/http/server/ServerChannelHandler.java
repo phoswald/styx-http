@@ -1,6 +1,8 @@
 package styx.http.server;
 
-import java.util.function.BiConsumer;
+import java.util.Objects;
+import java.util.concurrent.CompletableFuture;
+import java.util.function.Function;
 
 import io.netty.channel.ChannelHandlerContext;
 import io.netty.channel.SimpleChannelInboundHandler;
@@ -10,11 +12,11 @@ import io.netty.handler.codec.http.LastHttpContent;
 
 class ServerChannelHandler extends SimpleChannelInboundHandler<Object> {
 
-    private final BiConsumer<Request, Response> handler;
+    private final Function<Request, CompletableFuture<Response>> handler;
     private RequestBuilder builder = new RequestBuilder();
 
-    ServerChannelHandler(BiConsumer<Request, Response> handler) {
-        this.handler = handler;
+    ServerChannelHandler(Function<Request, CompletableFuture<Response>> handler) {
+        this.handler = Objects.requireNonNull(handler);
     }
 
     @Override
@@ -32,10 +34,11 @@ class ServerChannelHandler extends SimpleChannelInboundHandler<Object> {
             builder.handle(context, (HttpContent) message);
 
             if (message instanceof LastHttpContent) {
+                RequestBuilder capturedBuilder = builder;
                 Request request = builder.build();
-                Response response = new Response();
-                handler.accept(request, response);
-                response.send(context, builder.isValid(), builder.keepAlive());
+                handler.apply(request).thenAccept(response -> {
+                    response.send(context, capturedBuilder.isValid(), capturedBuilder.keepAlive());
+                });
                 builder = new RequestBuilder();
             }
         }

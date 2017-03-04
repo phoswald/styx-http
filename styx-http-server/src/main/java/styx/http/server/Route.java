@@ -5,36 +5,70 @@ import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.Paths;
 import java.util.ArrayList;
+import java.util.Collections;
 import java.util.List;
 import java.util.Objects;
 import java.util.Optional;
+import java.util.concurrent.CompletableFuture;
 import java.util.function.BiConsumer;
+import java.util.function.Function;
 
 import styx.http.QueryParam;
+import styx.http.SessionVariable;
 
 public class Route {
 
     private final Path path;
     private final BiConsumer<Request, Response> handler;
+    private final boolean requireSession;
+    private final String requireSessionRedirectTo;
 
-    private Route(Path path, BiConsumer<Request, Response> handler) {
-        this.path = path;
-        this.handler = handler;
+    private Route(Path path, BiConsumer<Request, Response> handler, boolean requireSession, String requireSessionRedirectTo) {
+        this.path = Objects.requireNonNull(path);
+        this.handler = Objects.requireNonNull(handler);
+        this.requireSession = requireSession;
+        this.requireSessionRedirectTo = requireSessionRedirectTo;
     }
 
-    static BiConsumer<Request, Response> combine(Route[] routes) {
-        return (request, response) -> {
-            Path requestPath = Paths.get(request.path());
-            for(Route route : routes) {
-                Optional<List<QueryParam>> match = match(route.path, requestPath);
-                if(match.isPresent()) {
-                    request.addParams(match.get());
-                    route.handler.accept(request, response);
-                    return;
-                }
+    static Function<Request, CompletableFuture<Response>> createHandler(Route[] routes, Server server) {
+        return (request) -> handle(routes, server, request);
+    }
+
+    private static CompletableFuture<Response> handle(Route[] routes, Server server, Request request) {
+        Path requestPath = Paths.get(request.path());
+        for(Route route : routes) {
+            Optional<List<QueryParam>> match = match(route.path, requestPath);
+            if(match.isPresent()) {
+                return route.handle(server, request, match.get());
             }
-            response.status(404);
-        };
+        }
+        Response response = new Response();
+        response.status(404);
+        return CompletableFuture.completedFuture(response);
+    }
+
+    private CompletableFuture<Response> handle(Server server, Request request, List<QueryParam> urlParams) {
+        Optional<List<SessionVariable>> sessionParams;
+        if(server.getSessionHandler().isPresent()) {
+            sessionParams = request.cookies().stream().
+                    filter(c -> c.name().equals(SessionHandler.COOKIE_NAME)).
+                    findFirst().
+                    flatMap(c -> server.getSessionHandler().get().decodeAndVerifyCookie(c.value()));
+        } else {
+            sessionParams = Optional.empty();
+        }
+        Response response = new Response();
+        if(requireSession && !sessionParams.isPresent()) {
+            if(requireSessionRedirectTo != null) {
+                return CompletableFuture.completedFuture(response.redirect(requireSessionRedirectTo));
+            } else {
+                return CompletableFuture.completedFuture(response.status(401));
+            }
+        }
+        request.addUrlParams(urlParams);
+        request.setSessionVariables(sessionParams.orElse(Collections.emptyList()));
+        handler.accept(request, response);
+        return CompletableFuture.completedFuture(response);
     }
 
     static Optional<List<QueryParam>> match(String pattern, String actual) {
@@ -69,21 +103,21 @@ public class Route {
 
     public static class Builder {
         private Path path;
-        private SecurityProvider secure;
-        private String secureRedirectTo;
+        private boolean requireSession;
+        private String requireSessionRedirectTo;
 
         public Builder path(String path) {
             this.path = Paths.get(path);
             return this;
         }
 
-        public Builder secure(SecurityProvider secure) {
-            return secure(secure, null);
+        public Builder requireSession() {
+            return requireSession(null);
         }
 
-        public Builder secure(SecurityProvider secure, String redirectTo) {
-            this.secure = Objects.requireNonNull(secure);
-            this.secureRedirectTo = redirectTo;
+        public Builder requireSession(String redirectTo) {
+            this.requireSession = true;
+            this.requireSessionRedirectTo = redirectTo;
             return this;
         }
 
@@ -136,28 +170,7 @@ public class Route {
         }
 
         private Route build(Path path, BiConsumer<Request, Response> handler) {
-            BiConsumer<Request, Response> handler2;
-            if(secure != null) {
-                handler2 = (req, res) -> {
-                    Optional<List<QueryParam>> sessionParams = req.cookies().stream().
-                            filter(c -> c.name().equals(SecurityProvider.COOKIE_NAME)).
-                            findFirst().
-                            flatMap(c -> secure.checkCookie(c.value()));
-                    if(!sessionParams.isPresent()) {
-                        if(secureRedirectTo != null) {
-                            res.redirect(secureRedirectTo);
-                        } else {
-                            res.status(401);
-                        }
-                        return;
-                    }
-                    req.addParams(sessionParams.get());
-                    handler.accept(req, res);
-                };
-            } else {
-                handler2 = handler;
-            }
-            return new Route(path, handler2);
+            return new Route(path, handler, requireSession, requireSessionRedirectTo);
         }
     }
 }

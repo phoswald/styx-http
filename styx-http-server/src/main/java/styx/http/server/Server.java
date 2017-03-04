@@ -1,7 +1,11 @@
 package styx.http.server;
 
+import java.time.Duration;
+import java.time.Instant;
+import java.util.Arrays;
 import java.util.Optional;
-import java.util.function.BiConsumer;
+import java.util.concurrent.CompletableFuture;
+import java.util.function.Function;
 import java.util.logging.Logger;
 
 import io.netty.bootstrap.ServerBootstrap;
@@ -15,6 +19,7 @@ import io.netty.handler.ssl.SslContext;
 import io.netty.handler.ssl.SslContextBuilder;
 import io.netty.handler.ssl.util.SelfSignedCertificate;
 import styx.http.HttpException;
+import styx.http.SessionVariable;
 
 public class Server implements AutoCloseable {
 
@@ -26,7 +31,8 @@ public class Server implements AutoCloseable {
 
     private boolean secure = false;
     private int port = 80;
-    private BiConsumer<Request, Response> handler;
+    private SessionHandler sessionHandler;
+    private Function<Request, CompletableFuture<Response>> handler;
 
     public Server() {
         bossGroup = new NioEventLoopGroup(1);
@@ -44,13 +50,13 @@ public class Server implements AutoCloseable {
         return this;
     }
 
-    public Server routes(Route... routes) {
-        this.handler = Route.combine(routes);
+    public Server enableSessions() {
+        sessionHandler = new SessionHandler();
         return this;
     }
 
-    public Server handler(BiConsumer<Request, Response> handler) {
-        this.handler = handler;
+    public Server routes(Route... routes) {
+        this.handler = Route.createHandler(routes, this);
         return this;
     }
 
@@ -84,6 +90,15 @@ public class Server implements AutoCloseable {
 
     public static Route.Builder route() {
         return new Route.Builder();
+    }
+
+    Optional<SessionHandler> getSessionHandler() {
+        return Optional.ofNullable(sessionHandler);
+    }
+
+    public void login(Response response, Duration expiry, SessionVariable... sessionVariables) {
+        response.cookie(SessionHandler.COOKIE_NAME, sessionHandler.encodeAndSignCookie(
+                Arrays.asList(sessionVariables), Instant.now().plus(expiry)));
     }
 
     private String protocol() {

@@ -2,6 +2,7 @@ package styx.http.server;
 
 import java.io.ByteArrayOutputStream;
 import java.nio.charset.Charset;
+import java.util.ArrayList;
 import java.util.Collections;
 import java.util.List;
 import java.util.Objects;
@@ -10,6 +11,7 @@ import java.util.Optional;
 import styx.http.Cookie;
 import styx.http.Header;
 import styx.http.QueryParam;
+import styx.http.SessionVariable;
 
 public class Request {
 
@@ -19,6 +21,7 @@ public class Request {
     private final List<QueryParam> params;
     private final List<Header> headers;
     private final List<Cookie> cookies;
+    private final List<SessionVariable> session;
     private final byte[] content;
 
     Request(String protocol, String host, String path,
@@ -29,14 +32,19 @@ public class Request {
         this.protocol = Objects.requireNonNull(protocol);
         this.host = Objects.requireNonNull(host);
         this.path = Objects.requireNonNull(path);
-        this.params = Objects.requireNonNull(params); // TODO: Collections.unmodifiableList(params);
-        this.headers = Collections.unmodifiableList(headers);
-        this.cookies = Collections.unmodifiableList(cookies);
+        this.params = Objects.requireNonNull(params);
+        this.headers = Objects.requireNonNull(headers);
+        this.cookies = Objects.requireNonNull(cookies);
+        this.session = new ArrayList<>();
         this.content = content.toByteArray();
     }
 
-    void addParams(List<QueryParam> params) {
-        this.params.addAll(params);
+    void addUrlParams(List<QueryParam> urlParams) {
+        params.addAll(urlParams);
+    }
+
+    void setSessionVariables(List<SessionVariable> session) {
+        this.session.addAll(session);
     }
 
     public String protocol() {
@@ -52,7 +60,7 @@ public class Request {
     }
 
     public List<QueryParam> params() {
-        return params;
+        return Collections.unmodifiableList(params);
     }
 
     public Optional<String> param(String name) {
@@ -63,7 +71,7 @@ public class Request {
     }
 
     public List<Header> headers() {
-        return headers;
+        return Collections.unmodifiableList(headers);
     }
 
     public Optional<String> header(String name) {
@@ -81,7 +89,18 @@ public class Request {
     }
 
     public List<Cookie> cookies() {
-        return cookies;
+        return Collections.unmodifiableList(cookies);
+    }
+
+    public List<SessionVariable> session() {
+        return Collections.unmodifiableList(session);
+    }
+
+    public Optional<String> session(String name) {
+        return session.stream().
+                filter(p -> p.name().equals(name)).
+                map(p -> p.value()).
+                findFirst();
     }
 
     public int contentLength() {

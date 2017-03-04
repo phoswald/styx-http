@@ -22,7 +22,7 @@ import javax.net.ssl.HttpsURLConnection;
 import org.junit.Rule;
 import org.junit.Test;
 
-import styx.http.QueryParam;
+import styx.http.SessionVariable;
 import styx.http.server.utils.PortFinder;
 import styx.http.server.utils.ServerRule;
 import styx.http.server.utils.TrustAllCertsRule;
@@ -31,18 +31,16 @@ public class ServerSecureTest {
 
     private int port = new PortFinder().port();
 
-    private SecurityProvider sp = new DefaultSecurityProvider();
-
     @Rule
     public TrustAllCertsRule trustRule = new TrustAllCertsRule();
 
     @Rule
     public ServerRule serverRule = new ServerRule(
-            server -> server.secure(true).port(port).routes(
+            server -> server.secure(true).port(port).enableSessions().routes(
                     route().path("/text").to((req, res) -> res.write("RESPONSE_STRING_ÄÖÜ_€")),
-                    route().secure(sp).path("/secret").to((req, res) -> res.write("Je t'aime, " + req.param("user").orElse(null) + ".")),
-                    route().secure(sp, "/login").path("/secretrd").to((req, res) -> { }),
-                    route().path("/login").to((req, res) -> { sp.login(res, Duration.ofMinutes(60), new QueryParam("user", req.param("who").get())); })));
+                    route().requireSession().path("/secret").to((req, res) -> res.write("Je t'aime, " + req.session("user").orElse(null) + ".")),
+                    route().requireSession("/login").path("/secretrd").to((req, res) -> { }),
+                    route().path("/login").to((req, res) -> { server.login(res, Duration.ofMinutes(60), new SessionVariable("user", req.param("who").get())); })));
 
     @Test
     public void getText_found_success() throws IOException {
@@ -52,14 +50,14 @@ public class ServerSecureTest {
     }
 
     @Test
-    public void getText_securedNoCookie_unauthorized() throws IOException {
+    public void getText_requireSessionNoCookie_unauthorized() throws IOException {
         HttpsURLConnection connection = (HttpsURLConnection) new URL("https://localhost:" + port + "/secret").openConnection();
         assertEquals(401, connection.getResponseCode());
         assertEquals(0, connection.getContentLength());
     }
 
     @Test
-    public void getText_securedNoCookie_redirected() throws IOException {
+    public void getText_requireSessionNoCookie_redirected() throws IOException {
         HttpsURLConnection connection = (HttpsURLConnection) new URL("https://localhost:" + port + "/secretrd").openConnection();
         connection.setInstanceFollowRedirects(false);
         assertEquals(303, connection.getResponseCode());
@@ -68,34 +66,34 @@ public class ServerSecureTest {
     }
 
     @Test
-    public void getText_securedInvalidCookie_unauthorized() throws IOException {
+    public void getText_requireSessionInvalidCookie_unauthorized() throws IOException {
         HttpsURLConnection connection = (HttpsURLConnection) new URL("https://localhost:" + port + "/secret").openConnection();
-        connection.setRequestProperty("Cookie", SecurityProvider.COOKIE_NAME + "=" + "XXXX");
+        connection.setRequestProperty("Cookie", SessionHandler.COOKIE_NAME + "=" + "XXXX");
         assertEquals(401, connection.getResponseCode());
         assertEquals(0, connection.getContentLength());
     }
 
     @Test
-    public void getText_securedValidCookie_success() throws IOException {
+    public void getText_requireSessionValidCookie_success() throws IOException {
         Instant expiry = Instant.now().plusSeconds(1000);
-        String cookie = sp.signCookie(Arrays.asList(new QueryParam("user", "Philip")), expiry);
+        String cookie = serverRule.getServer().getSessionHandler().get().encodeAndSignCookie(Arrays.asList(new SessionVariable("user", "Philip")), expiry);
         HttpsURLConnection connection = (HttpsURLConnection) new URL("https://localhost:" + port + "/secret").openConnection();
-        connection.setRequestProperty("Cookie", SecurityProvider.COOKIE_NAME + "=" + cookie);
+        connection.setRequestProperty("Cookie", SessionHandler.COOKIE_NAME + "=" + cookie);
         assertEquals(200, connection.getResponseCode());
         assertTrue(connection.getContentLength() > 0);
         assertEquals("Je t'aime, Philip.", readResponseString(connection, StandardCharsets.UTF_8));
     }
 
     @Test
-    public void getText_cookieFromLogin_success() throws IOException {
+    public void getText_requireSessionCookieFromLogin_success() throws IOException {
         HttpsURLConnection connection = (HttpsURLConnection) new URL("https://localhost:" + port + "/login?who=Guest").openConnection();
         assertEquals(200, connection.getResponseCode());
         String header = connection.getHeaderField("Set-Cookie");
-        assertThat(header, startsWith(SecurityProvider.COOKIE_NAME + "="));
-        String cookie = header.substring(SecurityProvider.COOKIE_NAME.length() + 1);
+        assertThat(header, startsWith(SessionHandler.COOKIE_NAME + "="));
+        String cookie = header.substring(SessionHandler.COOKIE_NAME.length() + 1);
 
         connection = (HttpsURLConnection) new URL("https://localhost:" + port + "/secret").openConnection();
-        connection.setRequestProperty("Cookie", SecurityProvider.COOKIE_NAME + "=" + cookie);
+        connection.setRequestProperty("Cookie", SessionHandler.COOKIE_NAME + "=" + cookie);
         assertEquals(200, connection.getResponseCode());
         assertTrue(connection.getContentLength() > 0);
         assertEquals("Je t'aime, Guest.", readResponseString(connection, StandardCharsets.UTF_8));

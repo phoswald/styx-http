@@ -1,7 +1,9 @@
 package styx.http.server;
 
+import java.util.Objects;
 import java.util.Optional;
-import java.util.function.BiConsumer;
+import java.util.concurrent.CompletableFuture;
+import java.util.function.Function;
 
 import io.netty.channel.ChannelInitializer;
 import io.netty.channel.ChannelPipeline;
@@ -13,11 +15,11 @@ import io.netty.handler.ssl.SslContext;
 class ServerChannelInitializer extends ChannelInitializer<SocketChannel> {
 
     private final Optional<SslContext> sslContext;
-    private final BiConsumer<Request, Response> handler;
+    private final Function<Request, CompletableFuture<Response>> handler;
 
-    ServerChannelInitializer(Optional<SslContext> sslContext, BiConsumer<Request, Response> handler) {
-        this.sslContext = sslContext;
-        this.handler = handler;
+    ServerChannelInitializer(Optional<SslContext> sslContext, Function<Request, CompletableFuture<Response>> handler) {
+        this.sslContext = Objects.requireNonNull(sslContext);
+        this.handler = Objects.requireNonNull(handler);
     }
 
     @Override
