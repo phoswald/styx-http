@@ -45,6 +45,10 @@ public class Response {
 
     Response() { }
 
+    int status() {
+        return status;
+    }
+
     public Response status(int status) {
         this.status = status;
         return this;

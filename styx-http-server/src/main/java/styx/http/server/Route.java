@@ -144,29 +144,52 @@ public class Route {
             return build(path, (req, res) -> {
                 Path file = base.resolve(req.param("**").orElse(""));
                 if(Files.isDirectory(file)) {
+                    if(!req.path().endsWith("/")) {
+                        res.redirect(req.path() + "/");
+                        return;
+                    }
                     res.contentType("text/html");
-                    res.write("<html>");
-                    res.write("<head><title>" + file + "</title></head>");
-                    res.write("<body>");
-                    res.write("<h1>" + file + "</h1>");
+                    res.write("<html>\n");
+                    res.write("  <head><title>" + file + "</title></head>\n");
+                    res.write("  <body>\n");
+                    res.write("    <h1>" + file + "</h1>\n");
+                    res.write("    <table>\n");
                     if(!file.equals(base)) {
-                        res.write("<a href='../'>..</a><br>");
+                        res.write("      <tr><td><a href='../'>..</a></td><td></td></tr>\n");
                     }
                     try {
                         Files.list(file).
                             filter(f -> !f.getFileName().toString().startsWith(".")).
-                            forEach(f -> res.write("<a href='" + f.getFileName() + (Files.isDirectory(f) ? "/" : "") + "'>" + f.getFileName() + "</a><br>"));
+                            forEach(f -> {
+                                String link = f.getFileName().toString();
+                                String size = "";
+                                if(Files.isDirectory(f)) {
+                                    link += "/";
+                                } else {
+                                    size = getFileSize(f);
+                                }
+                                res.write("      <tr><td><a href='" + link + "'>" + link + "</a></td><td>" + size + "</td></tr>\n");
+                            });
                     } catch (IOException e) {
                         res.status(500).write(e.toString());
                     }
-                    res.write("</body>");
-                    res.write("</html>");
+                    res.write("    </table>\n");
+                    res.write("  </body>\n");
+                    res.write("</html>\n");
                 } else if(Files.isRegularFile(file)) {
                     res.writeFile(file);
                 } else {
                     res.status(404);
                 }
             });
+        }
+
+        private static String getFileSize(Path f) {
+            try {
+                return ((Files.size(f) + 1023) >> 10) + " KB";
+            } catch (IOException e) {
+                return "?";
+            }
         }
 
         private Route build(Path path, BiConsumer<Request, Response> handler) {

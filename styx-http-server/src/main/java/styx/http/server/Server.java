@@ -29,6 +29,7 @@ public class Server implements AutoCloseable {
     private final EventLoopGroup workerGroup;
     private Channel channel;
 
+    private String domain = "localhost";
     private boolean secure = false;
     private int port = 80;
     private SessionHandler sessionHandler;
@@ -42,6 +43,12 @@ public class Server implements AutoCloseable {
 
     public Server secure(boolean secure) {
         this.secure = secure;
+        return this;
+    }
+
+    public Server secure(boolean secure, String domain) {
+        this.secure = secure;
+        this.domain = domain;
         return this;
     }
 
@@ -61,7 +68,7 @@ public class Server implements AutoCloseable {
     }
 
     public void start() {
-        Optional<SslContext> sslContext = createSslContext();
+        Optional<SslContext> sslContext = createSslContext(domain);
         ServerBootstrap bootstrap = new ServerBootstrap().
                 group(bossGroup, workerGroup).
                 channel(NioServerSocketChannel.class).
@@ -105,10 +112,11 @@ public class Server implements AutoCloseable {
         return secure ? "HTTPS" : "HTTP";
     }
 
-    private Optional<SslContext> createSslContext() {
+    private Optional<SslContext> createSslContext(String domain) {
         try {
             if(secure) {
-                SelfSignedCertificate certificate = new SelfSignedCertificate("localhost");
+                logger.warning("Using self-signed SSL certificate for " + domain);
+                SelfSignedCertificate certificate = new SelfSignedCertificate(domain);
                 return Optional.of(SslContextBuilder.forServer(
                         certificate.certificate(), certificate.privateKey()).build());
             } else {

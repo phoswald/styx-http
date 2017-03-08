@@ -51,6 +51,10 @@ public class Request {
         return protocol;
     }
 
+    public String method() {
+        return "GET"; // TODO support methods other than GET
+    }
+
     public String host() {
         return host;
     }
