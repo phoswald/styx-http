@@ -5,6 +5,7 @@ import java.time.Instant;
 import java.util.Arrays;
 import java.util.Optional;
 import java.util.concurrent.CompletableFuture;
+import java.util.concurrent.CountDownLatch;
 import java.util.function.Function;
 import java.util.logging.Logger;
 
@@ -79,9 +80,15 @@ public class Server implements AutoCloseable {
         logger.info("Started " + protocol() + " server on port " + port);
     }
 
+    @Deprecated
     public void run() {
         start();
         channel.closeFuture().syncUninterruptibly();
+    }
+
+    public void run(CountDownLatch stop) throws InterruptedException {
+        start();
+        stop.await();
     }
 
     @Override
