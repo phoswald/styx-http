@@ -1,5 +1,6 @@
 package styx.http.server;
 
+import java.nio.file.Path;
 import java.time.Duration;
 import java.time.Instant;
 import java.util.Arrays;
@@ -30,9 +31,11 @@ public class Server implements AutoCloseable {
     private final EventLoopGroup workerGroup;
     private Channel channel;
 
-    private String domain = "localhost";
     private boolean secure = false;
+    private String host = "localhost";
     private int port = 80;
+    private Path certFullChain;
+    private Path certPrivateKey;
     private SessionHandler sessionHandler;
     private Function<Request, CompletableFuture<Response>> handler;
 
@@ -47,14 +50,19 @@ public class Server implements AutoCloseable {
         return this;
     }
 
-    public Server secure(boolean secure, String domain) {
-        this.secure = secure;
-        this.domain = domain;
+    public Server host(String host) {
+        this.host = host;
         return this;
     }
 
     public Server port(int port) {
         this.port = port;
+        return this;
+    }
+
+    public Server certificate(Path certFullChain, Path certPrivateKey) {
+        this.certFullChain = certFullChain;
+        this.certPrivateKey = certPrivateKey;
         return this;
     }
 
@@ -69,7 +77,7 @@ public class Server implements AutoCloseable {
     }
 
     public void start() {
-        Optional<SslContext> sslContext = createSslContext(domain);
+        Optional<SslContext> sslContext = createSslContext();
         ServerBootstrap bootstrap = new ServerBootstrap().
                 group(bossGroup, workerGroup).
                 channel(NioServerSocketChannel.class).
@@ -119,13 +127,19 @@ public class Server implements AutoCloseable {
         return secure ? "HTTPS" : "HTTP";
     }
 
-    private Optional<SslContext> createSslContext(String domain) {
+    private Optional<SslContext> createSslContext() {
         try {
             if(secure) {
-                logger.warning("Using self-signed SSL certificate for " + domain);
-                SelfSignedCertificate certificate = new SelfSignedCertificate(domain);
-                return Optional.of(SslContextBuilder.forServer(
-                        certificate.certificate(), certificate.privateKey()).build());
+                if(certFullChain != null && certPrivateKey != null) {
+                    logger.info("Using SSL certificate from " + certFullChain + " and " + certPrivateKey);
+                    return Optional.of(SslContextBuilder.forServer(
+                            certFullChain.toFile(), certPrivateKey.toFile()).build());
+                } else {
+                    logger.warning("Using self-signed SSL certificate for " + host);
+                    SelfSignedCertificate certificate = new SelfSignedCertificate(host);
+                    return Optional.of(SslContextBuilder.forServer(
+                            certificate.certificate(), certificate.privateKey()).build());
+                }
             } else {
                 return Optional.empty();
             }
